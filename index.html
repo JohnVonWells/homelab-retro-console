@@ -302,8 +302,42 @@
         flex-direction: column;
       }
       .card.classic {
-        border: 1px solid var(--accent, #4dff5a);
+        border: 1px solid var(--bcol, var(--accent, #4dff5a));
         border-radius: 0;
+      }
+      .card.bdash {
+        border: 1px dashed var(--bcol, var(--accent, #4dff5a));
+        border-radius: 0;
+      }
+      .card.bcorner {
+        border-color: transparent;
+        border-radius: 0;
+      }
+      .card.bdash::after,
+      .card.bcorner::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 2;
+        background:
+          linear-gradient(var(--bcol, var(--accent, #4dff5a)), var(--bcol, var(--accent, #4dff5a))) left 0 top 0 / 14px
+            2px,
+          linear-gradient(var(--bcol, var(--accent, #4dff5a)), var(--bcol, var(--accent, #4dff5a))) left 0 top 0 / 2px
+            14px,
+          linear-gradient(var(--bcol, var(--accent, #4dff5a)), var(--bcol, var(--accent, #4dff5a))) right 0 top 0 / 14px
+            2px,
+          linear-gradient(var(--bcol, var(--accent, #4dff5a)), var(--bcol, var(--accent, #4dff5a))) right 0 top 0 / 2px
+            14px,
+          linear-gradient(var(--bcol, var(--accent, #4dff5a)), var(--bcol, var(--accent, #4dff5a))) left 0 bottom 0 /
+            14px 2px,
+          linear-gradient(var(--bcol, var(--accent, #4dff5a)), var(--bcol, var(--accent, #4dff5a))) left 0 bottom 0 /
+            2px 14px,
+          linear-gradient(var(--bcol, var(--accent, #4dff5a)), var(--bcol, var(--accent, #4dff5a))) right 0 bottom 0 /
+            14px 2px,
+          linear-gradient(var(--bcol, var(--accent, #4dff5a)), var(--bcol, var(--accent, #4dff5a))) right 0 bottom 0 /
+            2px 14px;
+        background-repeat: no-repeat;
       }
       .card.monitor {
         border: 8px solid;
@@ -1072,13 +1106,22 @@
             </div>
             <label>Border</label>
             <div class="seg" id="m-border">
-              <button data-v="off">Off</button><button data-v="classic">Classic</button
+              <button data-v="off">Off</button><button data-v="classic" title="Solid stripe">Classic</button
+              ><button data-v="dash" title="Dashed stripe with fixed corners">--</button
+              ><button data-v="corner" title="Corner brackets only">⌐&nbsp;¬</button
               ><button data-v="mon">Monitor</button>
             </div>
             <div id="bezelrow" style="visibility: hidden">
               <label>Bezel plastic</label>
               <div class="seg" id="m-bezel">
                 <button data-v="dark">Dark</button><button data-v="beige">Beige</button>
+              </div>
+            </div>
+            <div id="bcolrow" style="visibility: hidden">
+              <label>Border colour</label>
+              <div class="stoprow">
+                <button class="tbtn" id="m-bacc" title="Follow the accent colour">ACC</button
+                ><span class="pal" id="borderpal"></span>
               </div>
             </div>
             <div class="row">
@@ -1775,9 +1818,13 @@
           "card" +
           (s.border === "classic"
             ? " classic"
-            : s.border === "mon"
-              ? " monitor" + (s.bordercol === "beige" ? " beige" : "")
-              : "");
+            : s.border === "dash"
+              ? " bdash"
+              : s.border === "corner"
+                ? " bcorner"
+                : s.border === "mon"
+                  ? " monitor" + (s.bordercol === "beige" ? " beige" : "")
+                  : "");
         el.dataset.k = s.key;
         el.style.setProperty("--accent", acc);
         el.draggable = editMode;
@@ -2593,6 +2640,8 @@
         card.style.setProperty("--accent", acc);
         const lbl = card.querySelector(".lbl");
         if (lbl) lbl.style.color = s.titlecol === "acc" ? gridState.accent : s.titlecol || "";
+        if (s.bcol) card.style.setProperty("--bcol", s.bcol === "acc" ? gridState.accent : s.bcol);
+        else card.style.removeProperty("--bcol");
         applyWash(card, s);
       }
       function applyWash(card, s, force) {
@@ -2674,6 +2723,7 @@
                 titlepos: s.titlepos,
                 border: s.border,
                 bordercol: s.bordercol,
+                bcol: s.bcol,
                 fx: s.fx,
                 wash: s.wash,
                 washc: s.washc,
@@ -2713,6 +2763,7 @@
           "titlepos",
           "border",
           "bordercol",
+          "bcol",
           "fx",
           "wash",
           "washc",
@@ -3282,6 +3333,28 @@
         titleColUI();
         refreshPreview();
       };
+      $("borderpal").innerHTML = PALETTE.map(
+        (c) => `<button type="button" class="sw" data-c="${c}" style="background:${c}"></button>`,
+      ).join("");
+      function bColUI() {
+        if (!mConf) return;
+        $("m-bacc").classList.toggle("on", mConf.bcol === "acc");
+        [...$("borderpal").children].forEach((b) => b.classList.toggle("on", b.dataset.c === mConf.bcol));
+        $("bcolrow").style.visibility = ["classic", "dash", "corner"].includes(mConf.border) ? "visible" : "hidden";
+      }
+      $("m-bacc").onclick = () => {
+        if (!mConf) return;
+        mConf.bcol = "acc";
+        bColUI();
+        refreshPreview();
+      };
+      $("borderpal").onclick = (e) => {
+        const b = e.target.closest(".sw");
+        if (!b || !mConf) return;
+        mConf.bcol = b.dataset.c;
+        bColUI();
+        refreshPreview();
+      };
       function numColUI() {
         $("m-nacc").classList.toggle("on", mConf.numcol === "acc");
         [...$("numpal").children].forEach((b) => b.classList.toggle("on", b.dataset.c === mConf.numcol));
@@ -3319,6 +3392,7 @@
         mConf.border = b.dataset.v;
         setSeg("m-border", b.dataset.v);
         $("bezelrow").style.visibility = mConf.border === "mon" ? "visible" : "hidden";
+        bColUI();
         refreshPreview();
       };
       function mFxUI() {
@@ -3449,6 +3523,8 @@
         if (CUSTOM[mConf.style]) $("pv-edit").onclick = () => seOpen(mConf.style);
         applyWash($("pvcard"), mConf, true);
         $("pvcard").classList.toggle("classic", mConf.border === "classic");
+        $("pvcard").classList.toggle("bdash", mConf.border === "dash");
+        $("pvcard").classList.toggle("bcorner", mConf.border === "corner");
         $("pvcard").classList.toggle("monitor", mConf.border === "mon");
         $("pvcard").classList.toggle("beige", mConf.border === "mon" && mConf.bordercol === "beige");
       }
@@ -3490,6 +3566,8 @@
         $("pvcard").style.setProperty("--accent", acc);
         const plbl = $("pvcard").querySelector(".lbl");
         if (plbl) plbl.style.color = pSpec.titlecol === "acc" ? gridState.accent : pSpec.titlecol || "";
+        if (pSpec.bcol) $("pvcard").style.setProperty("--bcol", pSpec.bcol === "acc" ? gridState.accent : pSpec.bcol);
+        else $("pvcard").style.removeProperty("--bcol");
         const cv = $("pv-c");
         if (!cv || !cv.clientWidth) return;
         const [cx, cw, ch2] = setup(cv);
@@ -3544,6 +3622,7 @@
         setSeg("m-border", mConf.border || "def");
         setSeg("m-bezel", mConf.bordercol || "dark");
         $("bezelrow").style.visibility = mConf.border === "mon" ? "visible" : "hidden";
+        bColUI();
         mFxUI();
         mWashUI();
         refreshPreview();
@@ -3605,6 +3684,7 @@
           title3: "top",
           border: "off",
           bordercol: "dark",
+          bcol: null,
           fx: fxPick(),
           wash: 0,
           washc: "acc",
@@ -3657,8 +3737,9 @@
           titlecol: s.titlecol || null,
           numon: s.numon !== false,
           title3: s.titleon === false ? "off" : s.titlepos || "top",
-          border: s.border === "classic" || s.border === "mon" ? s.border : "off", // legacy "def" → off
+          border: ["classic", "mon", "dash", "corner"].includes(s.border) ? s.border : "off", // legacy "def" → off
           bordercol: s.bordercol || "dark",
+          bcol: s.bcol || null,
           fx: fxPick(s.fx),
           wash: +s.wash || 0,
           washc: s.washc || "acc",
@@ -3725,6 +3806,7 @@
         s.titlepos = mConf.title3 === "off" ? s.titlepos || "top" : mConf.title3;
         s.border = mConf.border;
         s.bordercol = mConf.bordercol || "dark";
+        s.bcol = mConf.bcol || undefined;
         s.fx = { ...mConf.fx };
         s.wash = +mConf.wash || 0;
         s.washc = mConf.washc || "acc";
@@ -3773,8 +3855,9 @@
           titlecol: s.titlecol || null,
           numon: s.numon !== false,
           title3: s.titleon === false ? "off" : s.titlepos || "top",
-          border: s.border === "classic" || s.border === "mon" ? s.border : "off",
+          border: ["classic", "mon", "dash", "corner"].includes(s.border) ? s.border : "off",
           bordercol: s.bordercol || "dark",
+          bcol: s.bcol || null,
           fx: fxPick(s.fx),
           wash: +s.wash || 0,
           washc: s.washc || "acc",
@@ -3797,6 +3880,7 @@
           title3: mConf.title3,
           border: mConf.border,
           bordercol: mConf.bordercol,
+          bcol: mConf.bcol || null,
           fx: JSON.stringify(mConf.fx),
           wash: +mConf.wash || 0,
           washc: mConf.washc || "acc",
@@ -3816,7 +3900,12 @@
         if (mConf.numpos !== multiBase.numpos) d.push("numpos");
         if (!!mConf.numon !== multiBase.numon) d.push("numon");
         if (mConf.title3 !== multiBase.title3) d.push("title");
-        if (mConf.border !== multiBase.border || mConf.bordercol !== multiBase.bordercol) d.push("border");
+        if (
+          mConf.border !== multiBase.border ||
+          mConf.bordercol !== multiBase.bordercol ||
+          (mConf.bcol || null) !== multiBase.bcol
+        )
+          d.push("border");
         if (JSON.stringify(mConf.fx) !== multiBase.fx) d.push("fx");
         if ((+mConf.wash || 0) !== multiBase.wash || (mConf.washc || "acc") !== multiBase.washc) d.push("wash");
         return d;
@@ -3846,6 +3935,7 @@
           if (d.has("border")) {
             s.border = mConf.border;
             s.bordercol = mConf.bordercol || "dark";
+            s.bcol = mConf.bcol || undefined;
           }
           if (d.has("fx")) s.fx = { ...mConf.fx };
           if (d.has("wash")) {
@@ -5125,7 +5215,12 @@
         } else {
           // individual mode: each tile is its own little CRT (scissored draws - same total pixels as one pass)
           // border width + margin so the glass edge falloff never swallows the border line
-          const bezelInset = (el) => (el.classList.contains("monitor") ? 10 : el.classList.contains("classic") ? 3 : 0);
+          const bezelInset = (el) =>
+            el.classList.contains("monitor")
+              ? 10
+              : el.classList.contains("classic") || el.classList.contains("bdash") || el.classList.contains("bcorner")
+                ? 3
+                : 0;
           const inset = (r, bi) =>
             bi
               ? {
@@ -5157,7 +5252,11 @@
         ) {
           const pv = $("pvcard");
           if (pv && setF(mConf.fx)) {
-            const bi = pv.classList.contains("monitor") ? 10 : pv.classList.contains("classic") ? 3 : 0;
+            const bi = pv.classList.contains("monitor")
+              ? 10
+              : pv.classList.contains("classic") || pv.classList.contains("bdash") || pv.classList.contains("bcorner")
+                ? 3
+                : 0;
             const r = pv.getBoundingClientRect();
             const g = glRect(
               bi
