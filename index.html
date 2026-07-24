@@ -4592,8 +4592,8 @@
         sePrevDraw();
       };
       function seSizeCanvas(tw, th) {
-        // per-axis limits: a 3x1 design may use the full window width, not a square-ish box
-        const maxW = Math.max(480, window.innerWidth - 460);
+        // per-axis limits: wide designs get wide canvases, tempered so the dialog stays sane
+        const maxW = Math.max(480, Math.min(1140, window.innerWidth - 460));
         const maxH = Math.max(360, Math.round(window.innerHeight * 0.74));
         const U = Math.min(maxW / tw, maxH / th),
           cvW = Math.round(U * tw),
@@ -4614,10 +4614,12 @@
         SE.sy = mn / th;
         let pw = 250,
           ph = Math.round((250 * th) / tw);
-        if (ph > 140) {
-          ph = 140;
-          pw = Math.round((140 * tw) / th);
+        const capH = th > tw ? 300 : 140; // tall designs get a tall preview box
+        if (ph > capH) {
+          ph = capH;
+          pw = Math.round((capH * tw) / th);
         }
+        $("se-pvbox").style.height = (th > tw ? 310 : 150) + "px";
         $("se-pv").style.width = pw + "px";
         $("se-pv").style.height = ph + "px";
       }
