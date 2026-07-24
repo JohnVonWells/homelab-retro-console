@@ -55,6 +55,10 @@ Everything persists in localStorage: `rc_layout` (tiles), `rc_grid` (grid, FX, t
 - **CORS**: default Netdata configurations accept these requests. If you get `SIGNAL LOST` with Netdata reachable, check the `[web]` section of your `netdata.conf` (allow connections / access lists).
 - **Load**: one `allmetrics` fetch per second (~100–300 KB on a typical router) and a ~30 fps single-pass shader - negligible on both ends.
 
+_One custom style, dressed every way - colours, phosphor glow, bezels and border styles per tile:_
+
+![One custom style, many looks](screenshots/one-style-many-looks.gif)
+
 ## License
 
 - Code: [GPL-3.0](LICENSE) - free to use, study and modify; if you distribute it or a project built on it (including serving a modified copy from a website), that project must be open source under the GPL as well.
