@@ -1403,6 +1403,9 @@
             <label>Live preview</label>
             <div id="se-pvbox"><canvas id="se-pv" class="sepv"></canvas></div>
             <div class="row">
+              <button id="se-imp" title="Load a shared style file">Import</button>
+              <button id="se-exp" title="Save this style as a file to share">Export</button>
+              <input type="file" id="se-impfile" accept="application/json" style="display: none" />
               <button id="se-delshape">Del shape</button>
               <button id="se-clear">Clear</button>
             </div>
@@ -4566,6 +4569,34 @@
         $("se-msv").textContent = SE.gh ? SE.gh + " cells" : "OFF";
         sePrevDraw();
       };
+      function seSizeCanvas(tw, th) {
+        const BOX = Math.max(480, Math.min(840, window.innerWidth - 450, Math.round(window.innerHeight * 0.74)));
+        const U = BOX / Math.max(tw, th),
+          cvW = Math.round(U * tw),
+          cvH = Math.round(U * th);
+        $("se-cv").style.width = cvW + "px";
+        $("se-cv").style.height = cvH + "px";
+        if (tw >= th) {
+          SE.nx = SEGRID;
+          SE.ny = Math.max(4, Math.round((SEGRID * th) / tw));
+        } else {
+          SE.ny = SEGRID;
+          SE.nx = Math.max(4, Math.round((SEGRID * tw) / th));
+        }
+        SE.tw = tw;
+        SE.th = th;
+        const mn = Math.min(tw, th);
+        SE.sx = mn / tw;
+        SE.sy = mn / th;
+        let pw = 250,
+          ph = Math.round((250 * th) / tw);
+        if (ph > 140) {
+          ph = 140;
+          pw = Math.round((140 * tw) / th);
+        }
+        $("se-pv").style.width = pw + "px";
+        $("se-pv").style.height = ph + "px";
+      }
       function seOpen(id) {
         SE.editing = id || null;
         SE.sel = -1;
@@ -4618,32 +4649,7 @@
             th = 1 / a;
           }
         }
-        const BOX = Math.max(480, Math.min(840, window.innerWidth - 450, Math.round(window.innerHeight * 0.74)));
-        const U = BOX / Math.max(tw, th),
-          cvW = Math.round(U * tw),
-          cvH = Math.round(U * th);
-        $("se-cv").style.width = cvW + "px";
-        $("se-cv").style.height = cvH + "px";
-        if (tw >= th) {
-          SE.nx = SEGRID;
-          SE.ny = Math.max(4, Math.round((SEGRID * th) / tw));
-        } else {
-          SE.ny = SEGRID;
-          SE.nx = Math.max(4, Math.round((SEGRID * tw) / th));
-        }
-        SE.tw = tw;
-        SE.th = th;
-        const mn = Math.min(tw, th);
-        SE.sx = mn / tw;
-        SE.sy = mn / th;
-        let pw = 250,
-          ph = Math.round((250 * th) / tw);
-        if (ph > 140) {
-          ph = 140;
-          pw = Math.round((140 * tw) / th);
-        }
-        $("se-pv").style.width = pw + "px";
-        $("se-pv").style.height = ph + "px";
+        seSizeCanvas(tw, th);
         $("smodal").style.display = "flex";
         seDraw();
         seT = 0;
@@ -4653,6 +4659,132 @@
           sePrevDraw();
         }, 100);
       }
+      function seCopyShapes(arr) {
+        return arr.map((sh) => ({
+          pts: sh.pts.map((p) => p.slice()),
+          band: sh.band,
+          fd: sh.fd,
+          kind: sh.kind,
+          ax: sh.ax,
+          ay: sh.ay,
+          r: sh.r,
+          orient: sh.orient,
+          cpiv: sh.cpiv,
+          cmode: sh.cmode,
+        }));
+      }
+      function seSanitizeShapes(arr) {
+        if (!Array.isArray(arr)) return null;
+        const out = [];
+        for (const sh of arr) {
+          if (!sh || !Array.isArray(sh.pts) || sh.pts.length < 3) continue;
+          const pts = [];
+          for (const pt of sh.pts) {
+            const x = +pt[0],
+              y = +pt[1];
+            if (!isFinite(x) || !isFinite(y)) return null;
+            pts.push([Math.max(0, Math.min(1, x)), Math.max(0, Math.min(1, y))]);
+          }
+          const o = { pts };
+          if (sh.band != null) o.band = Math.max(0, Math.min(4, sh.band | 0));
+          if (typeof sh.fd === "string" && sh.fd.length <= 3) o.fd = sh.fd;
+          if (["pie", "dnt", "fcir", "fdnt"].includes(sh.kind)) {
+            o.kind = sh.kind;
+            o.ax = +sh.ax || 0;
+            o.ay = +sh.ay || 0;
+            o.r = +sh.r || 0.25;
+            o.orient = sh.orient & 3;
+          }
+          if (typeof sh.cpiv === "string") o.cpiv = sh.cpiv;
+          if (typeof sh.cmode === "string") o.cmode = sh.cmode;
+          out.push(o);
+        }
+        return out.length ? out : null;
+      }
+      $("se-exp").onclick = () => {
+        if (!SE.shapes.length) return;
+        const name = $("se-name").value.trim() || "CUSTOM STYLE";
+        const data = {
+          app: "netdata-retro-console",
+          kind: "style",
+          v: 1,
+          style: {
+            name,
+            shapes: seCopyShapes(SE.shapes),
+            fillDir: SE.fillDir,
+            rot: SE.rot,
+            gw: SE.gw,
+            gh: SE.gh,
+            asp: SE.tw / SE.th,
+          },
+        };
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+        a.download =
+          name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "") + ".style.json";
+        a.click();
+        URL.revokeObjectURL(a.href);
+      };
+      $("se-imp").onclick = () => $("se-impfile").click();
+      $("se-impfile").onchange = (e) => {
+        const file = e.target.files[0];
+        e.target.value = "";
+        if (!file) return;
+        const rd = new FileReader();
+        rd.onload = () => {
+          try {
+            const d = JSON.parse(rd.result);
+            if (d && d.kind === "style" && d.style && d.app === "netdata-retro-console") {
+              const shapes = seSanitizeShapes(d.style.shapes);
+              if (!shapes) {
+                alert("That style file has no usable shapes.");
+                return;
+              }
+              // load into the creator as a NEW style - Save adds it to your collection
+              SE.editing = null;
+              SE.sel = -1;
+              SE.shapes = shapes;
+              SE.fillDir = d.style.fillDir === "h" ? "h" : "v";
+              SE.rot = [0, 90, 180, 270].includes(+d.style.rot) ? +d.style.rot : 0;
+              SE.gw = Math.max(0, Math.min(6, d.style.gw | 0));
+              SE.gh = Math.max(0, Math.min(6, d.style.gh | 0));
+              $("se-name").value = (d.style.name || "IMPORTED").slice(0, 14);
+              $("se-mbars").value = SE.gw;
+              $("se-mbv").textContent = SE.gw ? SE.gw + " cells" : "OFF";
+              $("se-msegs").value = SE.gh;
+              $("se-msv").textContent = SE.gh ? SE.gh + " cells" : "OFF";
+              $("se-delstyle").style.display = "none";
+              const a = +d.style.asp || 1;
+              seSizeCanvas(a >= 1 ? a : 1, a >= 1 ? 1 : 1 / a);
+              seDraw();
+              sePrevDraw();
+            } else if (d && d.app === "netdata-retro-console" && d.styles) {
+              // a full dashboard backup: pull all its custom styles into the collection
+              let n = 0;
+              for (const key of Object.keys(d.styles)) {
+                const st = d.styles[key];
+                const shapes = seSanitizeShapes(st && st.shapes);
+                if (!shapes) continue;
+                let id = 1;
+                while (CUSTOM["cs" + id]) id++;
+                CUSTOM["cs" + id] = { ...st, shapes, name: st.name || "IMPORT " + id };
+                n++;
+              }
+              if (n) {
+                saveStyles();
+                renderStyleStrip();
+              }
+              alert(n ? n + " style(s) imported from the backup." : "No usable styles in that backup.");
+            } else alert("Not a Netdata Retro Console style file.");
+          } catch (err) {
+            alert("Could not read that file.");
+          }
+        };
+        rd.readAsText(file);
+      };
       function seClose() {
         $("smodal").style.display = "none";
         if (seTimer) {
