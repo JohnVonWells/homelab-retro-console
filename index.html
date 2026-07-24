@@ -3020,7 +3020,7 @@
               const open = navOpen.has(g);
               const un = groups[g].filter((k) => used.has(k)).length;
               return (
-                `<div class="cn-g${open ? " open" : ""}" data-g="${g}"><span>${g}</span><span>${un ? `(${un}/${groups[g].length})` : groups[g].length} ${open ? "−" : "+"}</span></div>` +
+                `<div class="cn-g${open ? " open" : ""}" data-g="${g}"><span>${g}</span><span>(${un}/${groups[g].length}) ${open ? "−" : "+"}</span></div>` +
                 (open
                   ? groups[g]
                       .map(
