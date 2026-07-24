@@ -1,0 +1,5293 @@
+<!doctype html>
+<!--
+  Netdata Retro Console - a retro-CRT homelab dashboard for Netdata
+  Copyright (C) 2026 John von Wells
+
+  This program is free software: you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by the
+  Free Software Foundation, either version 3 of the License, or (at your
+  option) any later version. This program is distributed WITHOUT ANY
+  WARRANTY. See the LICENSE file or https://www.gnu.org/licenses/gpl-3.0
+  for details. https://github.com/JohnVonWells/homelab-retro-console
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SYSTEM MONITOR</title>
+    <style>
+      @font-face {
+        font-family: "DSEG14";
+        src: url("fonts/dseg14_classic_bold.ttf") format("truetype");
+        font-weight: bold;
+        font-display: swap;
+      }
+      :root {
+        --green: #4dff5a;
+        --amber: #ffae00;
+        --red: #ff2f24;
+        --bg: #000;
+        --panel: #000;
+        --grid: #171f14;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--amber);
+        font-family: "Courier New", ui-monospace, monospace;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        overflow: hidden; /* the page never scrolls - the top bar stays put, the grid clips */
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 9;
+        background:
+          repeating-linear-gradient(0deg, rgba(0, 0, 0, 0) 0 2px, rgba(0, 0, 0, 0.3) 2px 3px),
+          radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.72) 100%);
+        mix-blend-mode: multiply;
+      }
+      body.fxon::before {
+        display: none;
+      }
+      #fx {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;
+        z-index: 100;
+        display: none;
+        mix-blend-mode: hard-light;
+      }
+      .fxrow {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin: 6px 0;
+      }
+      .fxsl {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 36px;
+        gap: 2px 6px;
+        align-items: center;
+      }
+      .fxsl b {
+        font-size: 9px;
+        color: #9fb0a0;
+        text-align: right;
+      }
+      .fxsl input {
+        width: 100%;
+      }
+      .wrap {
+        max-width: 100%;
+        margin: 0 auto;
+        padding: 12px;
+        position: relative;
+        z-index: 1;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+        border: 1px solid var(--accfaint, var(--grid));
+        border-radius: 5px;
+        padding: 7px 13px;
+        background: var(--panel);
+        margin-bottom: 11px;
+      }
+      .left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      h1 {
+        margin: 0;
+        font-size: 17px;
+        color: var(--acc, #ffae00);
+        text-shadow:
+          0 0 6px var(--acc, #ffae00),
+          0 0 16px var(--acc, #ffae00);
+        letter-spacing: 0.24em;
+      }
+      .tbtn {
+        height: 26px;
+        min-width: 26px;
+        padding: 0 8px;
+        border: 1px solid var(--accfaint, var(--grid));
+        background: var(--panel);
+        color: var(--acc, #ffae00);
+        font-family: inherit;
+        font-size: 14px;
+        line-height: 1;
+        border-radius: 4px;
+        cursor: pointer;
+        text-shadow: 0 0 6px var(--acc, #ffae00);
+      }
+      .tbtn:hover {
+        border-color: var(--acc, #ffae00);
+      }
+      .tbtn.on {
+        border-color: var(--accbri, var(--green));
+        color: var(--accbri, var(--green));
+        text-shadow: 0 0 8px var(--acc, #4dff5a);
+      }
+      #ctrls {
+        display: flex; /* always laid out so the header never changes height */
+        visibility: hidden;
+        align-items: center;
+        gap: 9px;
+        margin-left: 6px;
+        font-size: 10px;
+        color: var(--accdim, #8fa);
+      }
+      #ctrls.on {
+        visibility: visible;
+      }
+      #ctrls label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      #swatches {
+        display: flex;
+        gap: 4px;
+        margin-left: 6px;
+      }
+      .sw {
+        width: 16px;
+        height: 16px;
+        padding: 0;
+        border: 1px solid #333;
+        border-radius: 0;
+        cursor: pointer;
+      }
+      .sw.on {
+        outline: 2px solid #fff;
+        outline-offset: -1px;
+      }
+      input[type="range"] {
+        height: 14px;
+        -webkit-appearance: none;
+        appearance: none;
+        background: transparent;
+        cursor: pointer;
+      }
+      input[type="range"]::-webkit-slider-runnable-track {
+        height: 4px;
+        background: #12210f;
+        border: 1px solid var(--grid);
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 9px;
+        height: 14px;
+        margin-top: -6px;
+        background: var(--acc, #ffae00);
+        border: 0;
+        border-radius: 0;
+        box-shadow: 0 0 5px var(--acc, #ffae00);
+      }
+      input[type="range"]::-moz-range-track {
+        height: 4px;
+        background: #12210f;
+        border: 1px solid var(--grid);
+      }
+      input[type="range"]::-moz-range-thumb {
+        width: 9px;
+        height: 14px;
+        background: var(--acc, #ffae00);
+        border: 0;
+        border-radius: 0;
+        box-shadow: 0 0 5px var(--acc, #ffae00);
+      }
+      #ctrls input[type="range"] {
+        width: 70px;
+      }
+      #ctrls label.blink {
+        animation: blk 0.4s steps(1, end) 3;
+      }
+      #ctrls label.blink input::-webkit-slider-thumb {
+        background: var(--red);
+        box-shadow: 0 0 6px var(--red);
+      }
+      #ctrls label.blink input::-moz-range-thumb {
+        background: var(--red);
+        box-shadow: 0 0 6px var(--red);
+      }
+      @keyframes blk {
+        50% {
+          color: var(--red);
+          text-shadow: 0 0 7px var(--red);
+        }
+      }
+      .meta {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        font-size: 12px;
+        color: var(--accdim, #8fa);
+      }
+      .dseg {
+        font-family: "DSEG14", "Courier New", monospace;
+      }
+      .meta b {
+        color: var(--green);
+        text-shadow: 0 0 6px var(--green);
+        font-size: 13px;
+      }
+      .status {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .led {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        background: var(--green);
+        box-shadow:
+          0 0 6px var(--green),
+          0 0 14px var(--green);
+        animation: pulse 1.4s infinite;
+      }
+      .led.dead {
+        background: #123;
+        box-shadow: none;
+        animation: none;
+      }
+      @keyframes pulse {
+        50% {
+          opacity: 0.35;
+        }
+      }
+      .gridwrap {
+        overflow: hidden;
+      }
+      .grid {
+        display: grid;
+        gap: 9px;
+        justify-content: start;
+      }
+      .card {
+        border: 1px solid transparent; /* flat by default - border styles: classic / monitor */
+        border-radius: 5px;
+        background: var(--panel);
+        padding: 5px 8px 7px;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .card.classic {
+        border: 1px solid var(--accent, #4dff5a);
+        border-radius: 0;
+      }
+      .card.monitor {
+        border: 8px solid;
+        border-color: #3c3c41 #202024 #18181b #2e2e33; /* dark plastic bevel: lit top, shadowed bottom */
+        border-radius: 9px;
+        outline: 1px solid rgba(0, 0, 0, 0.65);
+        box-shadow:
+          inset 0 0 10px rgba(0, 0, 0, 0.85),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      }
+      .card.monitor.beige {
+        border-color: #d9d0b6 #a89e82 #8b8168 #c6bc9f; /* aged yellow-grey plastic */
+        box-shadow:
+          inset 0 0 10px rgba(0, 0, 0, 0.7),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      }
+      .card .wash {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 2; /* over the content, under the hover overlays */
+        mix-blend-mode: overlay;
+        display: none;
+      }
+      .card .hx,
+      .card .he {
+        position: absolute;
+        left: 0;
+        right: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 3;
+        cursor: pointer;
+        background: rgba(3, 5, 10, 0.62);
+      }
+      .card .hx {
+        font-size: 28px;
+        color: #ff6b5e;
+        text-shadow:
+          0 0 8px #ff2f24,
+          0 0 18px #ff2f24;
+        z-index: 4;
+      }
+      .card .hx:hover {
+        background: rgba(255, 47, 36, 0.16);
+      }
+      .card .he {
+        font-size: 52px;
+        color: var(--amber);
+        text-shadow: 0 0 8px var(--amber);
+      }
+      .card .he:hover {
+        background: rgba(255, 174, 0, 0.12);
+      }
+      body.edit .card {
+        cursor: grab;
+      }
+      body.edit .card:hover {
+        outline: 1px dashed rgba(255, 174, 0, 0.5);
+      }
+      body.edit .card:hover .hx,
+      body.edit .card:hover .he {
+        display: flex;
+      }
+      .card.dragging {
+        opacity: 0.35;
+      }
+      .card.dragover {
+        outline: 2px dashed var(--green) !important;
+      }
+      .addcard.dragover {
+        border-color: var(--green);
+        color: var(--green);
+      }
+      .lbl {
+        font-size: 9.5px;
+        color: #9fb0a0;
+        display: flex;
+        justify-content: space-between;
+        letter-spacing: 0.12em;
+        flex: 0 0 auto;
+      }
+      .u {
+        color: #67766a;
+      }
+      .disp {
+        position: relative;
+        height: 26px;
+        margin: 2px 0 3px;
+        font-family: "DSEG14", "Courier New", monospace;
+        font-size: 20px;
+        line-height: 26px;
+        text-align: right;
+        overflow: hidden;
+        flex: 0 0 auto;
+      }
+      .disp .ghost {
+        position: absolute;
+        inset: 0;
+        color: rgba(200, 220, 200, 0.055);
+      }
+      .disp .val {
+        position: relative;
+        color: var(--accent, #4dff5a);
+      }
+      canvas {
+        flex: 1 1 auto;
+        min-height: 0;
+        width: 100%;
+        display: block;
+      }
+      .addcard {
+        border: 1px dashed #2c3a2c;
+        border-radius: 5px;
+        background: rgba(255, 174, 0, 0.02);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #566;
+        font-size: 26px;
+        cursor: pointer;
+      }
+      .addcard:hover {
+        border-color: var(--amber);
+        color: var(--amber);
+      }
+      .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        background: rgba(0, 0, 0, 0.72);
+        align-items: center;
+        justify-content: center;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--grid);
+        border-radius: 8px;
+        padding: 18px 20px;
+        width: 340px;
+        max-width: 92vw;
+      }
+      .panel h3 {
+        margin: 0 0 6px;
+        color: var(--amber);
+        text-shadow: 0 0 6px var(--amber);
+        font-size: 14px;
+        letter-spacing: 0.2em;
+      }
+      .panel label {
+        display: block;
+        font-size: 10px;
+        color: #9fb0a0;
+        margin: 11px 0 3px;
+        letter-spacing: 0.12em;
+      }
+      .panel select {
+        width: 100%;
+        background: #05070c;
+        color: var(--green);
+        border: 1px solid var(--grid);
+        padding: 6px;
+        font-family: inherit;
+        font-size: 12px;
+        border-radius: 4px;
+      }
+      .panel .row {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        margin-top: 18px;
+      }
+      .panel button {
+        background: var(--panel);
+        border: 1px solid var(--grid);
+        color: var(--amber);
+        padding: 6px 15px;
+        font-family: inherit;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+      .panel button.pri {
+        color: var(--green);
+        border-color: var(--green);
+      }
+      .panel button.del {
+        color: var(--red);
+        border-color: var(--red);
+        margin-right: auto;
+      }
+      .seg {
+        display: flex;
+        gap: 6px;
+      }
+      .seg button {
+        flex: 1;
+        background: #05070c;
+        color: #8a9;
+        border: 1px solid var(--grid);
+        padding: 6px;
+        font-family: inherit;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+      .seg button.on {
+        color: var(--green);
+        border-color: var(--green);
+        text-shadow: 0 0 6px var(--green);
+      }
+      .seg button.on.m2 {
+        color: var(--amber);
+        border-color: var(--amber);
+        text-shadow: 0 0 6px var(--amber);
+      }
+      .seg button.on.m3 {
+        color: var(--red);
+        border-color: var(--red);
+        text-shadow: 0 0 6px var(--red);
+      }
+      .panel.editor {
+        width: min(1340px, 97vw);
+        max-height: 94vh;
+        overflow: auto;
+        padding: 14px 16px;
+      }
+      body.edit {
+        user-select: none;
+      }
+      h1 {
+        cursor: pointer;
+      }
+      h1:hover {
+        text-shadow:
+          0 0 10px var(--acc, #ffae00),
+          0 0 26px var(--acc, #ffae00);
+      }
+      body.edit .card.demo .hx,
+      body.edit .card.demo .he {
+        display: flex; /* auto-shown hint on the first tile when edit opens */
+      }
+      .addcard.demo {
+        border-color: var(--acc, #ffae00);
+        color: var(--acc, #ffae00);
+        box-shadow: 0 0 12px var(--accfaint, rgba(0, 0, 0, 0.5)) inset;
+      }
+      #tint {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 90; /* below the glass (#fx at 100) */
+        display: none;
+        background: var(--acc, #4dff5a);
+        mix-blend-mode: overlay;
+      }
+      .strow {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        font-size: 10px;
+        color: var(--accdim, #8fa);
+        margin: 6px 0;
+      }
+      .strow label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0;
+      }
+      .strow input[type="range"] {
+        width: 100px;
+      }
+      .card.msel {
+        outline: 2px solid var(--acc, #4dff5a) !important;
+        outline-offset: -1px;
+      }
+      #marquee {
+        position: fixed;
+        z-index: 15;
+        pointer-events: none;
+        border: 1px dashed var(--acc, #4dff5a);
+        background: rgba(255, 255, 255, 0.04);
+        display: none;
+      }
+      .panel.editor.multi #chartnav,
+      .panel.editor.multi .eleft > :not(#tilefx),
+      .panel.editor.multi #styleopts,
+      .panel.editor.multi #whrow,
+      .panel.editor.multi #nalrow {
+        display: none !important;
+      }
+      .panel.editor.multi {
+        width: auto;
+        min-width: 440px;
+      }
+      #chartnav {
+        flex: 0 0 250px;
+        overflow-y: auto;
+        border: 1px solid var(--grid);
+        border-radius: 4px;
+        padding: 4px;
+        font-size: 10px;
+      }
+      #chartnav .cn-g {
+        display: flex;
+        justify-content: space-between;
+        gap: 6px;
+        padding: 6px 7px;
+        cursor: pointer;
+        color: var(--accdim, #8fa);
+        letter-spacing: 0.1em;
+      }
+      #chartnav .cn-g:hover {
+        color: var(--acc, #ffae00);
+      }
+      #chartnav .cn-g.open {
+        color: var(--acc, #ffae00);
+      }
+      #chartnav .cn-i {
+        padding: 3px 7px 3px 16px;
+        cursor: pointer;
+        color: #7a8c7a;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      #chartnav .cn-i:hover {
+        color: var(--accbri, #fff);
+      }
+      #chartnav .cn-i.used {
+        color: var(--amber); /* already on the dashboard */
+      }
+      #chartnav .cn-i.sel {
+        color: var(--accbri, #fff);
+        text-shadow: 0 0 6px var(--acc, #4dff5a);
+      }
+      .ehead {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 10px;
+      }
+      .ehead h3 {
+        margin: 0;
+        white-space: nowrap;
+      }
+      #m-srcname {
+        color: var(--green);
+        font-size: 11px;
+        text-shadow: 0 0 6px var(--green);
+      }
+      .ebody {
+        display: flex;
+        gap: 16px;
+        align-items: stretch;
+      }
+      .eleft {
+        flex: 1 1 auto;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .eright {
+        flex: 0 0 290px;
+        display: flex;
+        flex-direction: column;
+      }
+      .styles {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .stylebtn {
+        flex: 0 0 auto;
+        width: 82px;
+        position: relative;
+        background: #05070c;
+        border: 1px solid var(--grid);
+        border-radius: 4px;
+        padding: 4px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        color: #8a9;
+        font-family: inherit;
+        font-size: 8.5px;
+        text-transform: uppercase;
+      }
+      .stylebtn.on {
+        border-color: var(--green);
+        color: var(--green);
+      }
+      .stylebtn canvas {
+        width: 100%;
+        height: 34px;
+      }
+      .stylebtn.newstyle {
+        justify-content: center;
+        font-size: 16px;
+        color: #566;
+        min-height: 56px;
+      }
+      .stylebtn.newstyle span {
+        font-size: 8.5px;
+      }
+      .stylebtn.newstyle:hover {
+        border-color: var(--amber);
+        color: var(--amber);
+      }
+      .pvpane {
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 220px;
+      }
+      .pvpane .card {
+        flex: 0 0 auto;
+      }
+      .pvpane .card #pv-edit {
+        position: absolute;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 5;
+        cursor: pointer;
+        font-size: 56px;
+        color: var(--amber);
+        text-shadow:
+          0 0 12px var(--amber),
+          0 0 30px var(--amber);
+        background: rgba(3, 5, 10, 0.55);
+      }
+      .pvpane .card:hover #pv-edit {
+        display: flex;
+      }
+      .panel.editor .eright > .row {
+        margin-top: auto;
+        padding-top: 18px;
+      }
+      .stopbar {
+        position: relative;
+        height: 30px;
+        margin: 8px 2px 4px;
+        cursor: copy;
+      }
+      .stopgrad {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 8px;
+        bottom: 8px;
+        border: 1px solid var(--grid);
+      }
+      .stopnode {
+        position: absolute;
+        top: 2px;
+        bottom: 2px;
+        width: 12px;
+        margin-left: -6px;
+        border: 1px solid #000;
+        outline: 1px solid rgba(255, 255, 255, 0.35);
+        cursor: ew-resize;
+        z-index: 2;
+      }
+      .stopnode.on {
+        outline: 2px solid #fff;
+      }
+      .stoprow {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .stoprow b {
+        font-size: 10px;
+        color: #9fb0a0;
+        min-width: 34px;
+      }
+      .pal {
+        display: flex;
+        gap: 3px;
+        flex-wrap: wrap;
+      }
+      .grid2 {
+        display: flex;
+        gap: 18px;
+      }
+      .grid2 > div {
+        flex: 1;
+      }
+      #styleopts {
+        min-height: 208px; /* sized for the equalizer's option set so the dialog never resizes */
+      }
+      #datatools {
+        margin-top: 8px;
+      }
+      #datatools .dtrow {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: 7px;
+      }
+      #datatools .dtlab {
+        font-size: 10px;
+        color: var(--accdim, #9fb0a0);
+        letter-spacing: 0.12em;
+        min-width: 44px;
+      }
+      #datatools select {
+        flex: 1;
+        min-width: 90px;
+        width: auto;
+      }
+      #datatools .seg button {
+        padding: 6px 9px;
+      }
+      #datatools input[type="number"] {
+        width: 78px;
+        background: #05070c;
+        color: var(--green);
+        border: 1px solid var(--grid);
+        padding: 5px;
+        font-family: inherit;
+        font-size: 11px;
+        border-radius: 4px;
+      }
+      #m-srcsel {
+        display: flex;
+        flex: 1;
+        gap: 8px;
+        align-items: center;
+        min-width: 0;
+      }
+      #styleopts .orow {
+        margin-top: 9px;
+      }
+      #styleopts .orow > label {
+        margin-top: 0;
+      }
+      .panel.sedit {
+        width: auto;
+        min-width: min(960px, 96vw);
+        max-height: 94vh;
+        overflow: auto;
+        padding: 14px 16px;
+      }
+      .panel.sedit .eright {
+        flex: 0 0 260px;
+      }
+      .secv {
+        border: 1px solid var(--grid);
+        background: #020409;
+        cursor: crosshair;
+        touch-action: none;
+        display: block;
+      }
+      .shapebar {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-self: flex-start;
+      }
+      .shapebar .shp {
+        width: 52px;
+        height: 52px;
+        padding: 0;
+        font-size: 24px;
+        line-height: 1;
+      }
+      #se-pvbox {
+        height: 150px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .sepv {
+        border: 1px solid var(--grid);
+        background: #020409;
+        display: block;
+      }
+      .hint {
+        font-size: 9px;
+        color: #67766a;
+        margin-top: 7px;
+        line-height: 1.6;
+      }
+      .tin {
+        width: 100%;
+        background: #05070c;
+        color: var(--green);
+        border: 1px solid var(--grid);
+        padding: 6px;
+        font-family: inherit;
+        font-size: 12px;
+        border-radius: 4px;
+        text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="fx" aria-hidden="true"></canvas>
+    <div id="tint" aria-hidden="true"></div>
+    <div id="marquee"></div>
+    <div class="wrap">
+      <header>
+        <div class="left">
+          <h1 id="h1t" title="Toggle edit mode">◆ System Monitor</h1>
+          <span id="ctrls">
+            <button class="tbtn" id="editbtn" title="Leave edit mode">EDIT</button>
+            <button class="tbtn" id="setbtn" title="Settings (Enter)">⚙</button>
+            <button class="tbtn" id="fillbtn" title="Fill empty cells with test tiles">FILL</button>
+            <button class="tbtn" id="clrbtn" title="Remove all added tiles">CLR</button>
+            <label>SCALE <input type="range" id="sc-scale" step="2" /></label>
+            <label>COLS <input type="range" id="sc-cols" step="1" /></label>
+            <label>ROWS <input type="range" id="sc-rows" step="1" /></label>
+            <button class="tbtn" id="alignh" title="Align grid horizontally">⬌</button>
+            <button class="tbtn" id="alignv" title="Align grid vertically">⬍</button>
+          </span>
+        </div>
+        <div class="meta">
+          <span>UPTIME <b id="uptime" class="dseg">--</b></span>
+          <span>CLOCK <b id="clock" class="dseg">--:--:--</b></span>
+          <span class="status"><span class="led" id="led"></span><b id="conn">LINK</b></span>
+        </div>
+      </header>
+      <div class="gridwrap"><div class="grid" id="grid"></div></div>
+    </div>
+
+    <div class="modal" id="modal">
+      <div class="panel editor">
+        <div class="ehead">
+          <h3 id="m-title">TILE EDITOR</h3>
+          <button class="tbtn" id="m-close" title="Close" style="margin-left: auto">✕</button>
+        </div>
+        <div class="ebody">
+          <div id="chartnav"></div>
+          <div class="eleft">
+            <div class="styles" id="m-styles"></div>
+            <div class="pvpane" id="pvpane"><div class="card" id="pvcard"></div></div>
+            <div id="datatools">
+              <div class="dtrow">
+                <span class="dtlab">DATA</span>
+                <span id="m-srcsel">
+                  <select id="m-chart" title="Netdata chart"></select>
+                  <select id="m-dim" title="Dimension - one value or the sum of all"></select>
+                  <div class="seg" id="m-mode"><button data-v="abs">Value</button><button data-v="pct">%</button></div>
+                </span>
+                <b id="m-srcname" style="display: none"></b>
+              </div>
+              <div class="dtrow">
+                <span class="dtlab">SCALE</span>
+                <div class="seg" id="m-scale">
+                  <button data-v="auto" title="0 → highest seen value">Auto</button
+                  ><button data-v="win" title="Follow min→max of the visible window - small changes fill the graph">
+                    Window</button
+                  ><button data-v="fix" title="Fixed range you set">Fixed</button>
+                </div>
+                <input type="number" id="m-smin" placeholder="min" title="Fixed range: minimum" />
+                <input type="number" id="m-smax" placeholder="max" title="Fixed range: maximum" />
+              </div>
+            </div>
+            <div id="tilefx">
+              <label>Tile CRT FX · applies in INDIV mode · intensity + speed</label>
+              <div id="m-fx">
+                <div class="fxrow">
+                  <button class="tbtn" data-k="g" title="Grille + scanlines">GRL</button>
+                  <div class="fxsl">
+                    <input type="range" data-k="g" min="0" max="100" step="5" title="Intensity" /><b data-k="g">OFF</b>
+                    <input type="range" data-k="gs" min="0" max="300" step="10" title="Raster speed" /><b data-k="gs"
+                      >×1.0</b
+                    >
+                  </div>
+                </div>
+                <div class="fxrow">
+                  <button class="tbtn" data-k="n" title="Static noise">NSE</button>
+                  <div class="fxsl">
+                    <input type="range" data-k="n" min="0" max="100" step="5" title="Intensity" /><b data-k="n">OFF</b>
+                    <input type="range" data-k="ns" min="0" max="300" step="10" title="Noise speed" /><b data-k="ns"
+                      >×1.0</b
+                    >
+                  </div>
+                </div>
+                <div class="fxrow">
+                  <button class="tbtn" data-k="f" title="Flicker">FLK</button>
+                  <div class="fxsl">
+                    <input type="range" data-k="f" min="0" max="100" step="5" title="Intensity" /><b data-k="f">OFF</b>
+                    <input type="range" data-k="fs" min="0" max="300" step="10" title="Flicker speed" /><b data-k="fs"
+                      >×1.0</b
+                    >
+                  </div>
+                </div>
+                <div class="fxrow">
+                  <button class="tbtn" data-k="t" title="Phosphor trails">TRL</button>
+                  <div class="fxsl">
+                    <input type="range" data-k="t" min="0" max="100" step="5" title="Trail length" /><b data-k="t"
+                      >OFF</b
+                    >
+                    <input type="range" data-k="ts" min="10" max="300" step="10" title="Decay speed" /><b data-k="ts"
+                      >×1.0</b
+                    >
+                  </div>
+                </div>
+                <div class="fxrow">
+                  <button class="tbtn" data-k="c" title="Curved glass">CRV</button>
+                  <div class="fxsl">
+                    <input type="range" data-k="c" min="0" max="100" step="5" title="Intensity" /><b data-k="c">OFF</b>
+                    <input type="range" data-k="cs" min="0" max="300" step="10" title="Glass breathing speed" /><b
+                      data-k="cs"
+                      >×1.0</b
+                    >
+                  </div>
+                </div>
+              </div>
+              <label>Colour overlay (wash)</label>
+              <div class="fxrow">
+                <button class="tbtn" id="mw-btn" title="Colour wash over this tile">WSH</button>
+                <div class="fxsl">
+                  <input type="range" id="mw-int" min="0" max="100" step="5" title="Intensity" /><b id="mw-val">OFF</b>
+                </div>
+              </div>
+              <div class="stoprow">
+                <button class="tbtn" id="mw-acc" title="Follow the accent colour">ACC</button>
+                <span class="pal" id="mw-pal"></span>
+              </div>
+            </div>
+          </div>
+          <div class="eright">
+            <label>Colour bands · drag nodes · click bar to add</label>
+            <div class="stopbar" id="stopbar"><div class="stopgrad" id="stopgrad"></div></div>
+            <div class="stoprow">
+              <b id="stoppct">0%</b>
+              <span class="pal" id="stoppal"></span>
+              <button class="tbtn" id="stopacc" title="Use the accent colour">ACC</button>
+              <button class="tbtn" id="stopadd" title="Add node after selected">+</button>
+              <button class="tbtn" id="stopdel" title="Remove selected node">−</button>
+              <button class="tbtn" id="preset3" title="3 bands (low/mid/high)">3</button>
+              <button class="tbtn" id="preset5" title="5 bands, 20% steps">5</button>
+            </div>
+            <div id="styleopts"></div>
+            <div class="grid2" id="whrow">
+              <div>
+                <label>Width (cells)</label>
+                <div class="seg" id="m-w">
+                  <button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button>
+                </div>
+              </div>
+              <div>
+                <label>Height (cells)</label>
+                <div class="seg" id="m-h">
+                  <button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button>
+                </div>
+              </div>
+            </div>
+            <label>Number position</label>
+            <div class="seg" id="m-num"><button data-v="top">Above</button><button data-v="bottom">Below</button></div>
+            <div id="nalrow">
+              <label>Number align</label>
+              <div class="seg" id="m-nal">
+                <button data-v="left">Left</button><button data-v="center">Centre</button
+                ><button data-v="right">Right</button>
+              </div>
+            </div>
+            <label>Number colour</label>
+            <div class="stoprow">
+              <button class="tbtn" id="m-nauto" title="Follow value colour">AUTO</button
+              ><button class="tbtn" id="m-nacc" title="Follow the accent colour">ACC</button
+              ><span class="pal" id="numpal"></span>
+            </div>
+            <div class="grid2">
+              <div>
+                <label>Number</label>
+                <div class="seg" id="m-numon"><button data-v="on">On</button><button data-v="off">Off</button></div>
+              </div>
+            </div>
+            <label>Title</label>
+            <div class="seg" id="m-titleon">
+              <button data-v="top">Above</button><button data-v="bottom">Below</button><button data-v="off">Off</button>
+            </div>
+            <label>Border</label>
+            <div class="seg" id="m-border">
+              <button data-v="off">Off</button><button data-v="classic">Classic</button
+              ><button data-v="mon">Monitor</button>
+            </div>
+            <div id="bezelrow" style="visibility: hidden">
+              <label>Bezel plastic</label>
+              <div class="seg" id="m-bezel">
+                <button data-v="dark">Dark</button><button data-v="beige">Beige</button>
+              </div>
+            </div>
+            <div class="row">
+              <button class="del" id="m-del" style="display: none">Delete</button>
+              <button id="m-cancel">Cancel</button>
+              <button class="pri" id="m-add">Add</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="setmodal" style="z-index: 26">
+      <div class="panel" style="width: 600px; max-width: 94vw; max-height: 92vh; overflow: auto">
+        <div class="ehead">
+          <h3>SETTINGS</h3>
+          <button class="tbtn" id="set-x" title="Close" style="margin-left: auto">✕</button>
+        </div>
+        <div class="seg" id="set-tabs" style="margin: 10px 0 4px">
+          <button data-v="screen" class="on">Screen</button><button data-v="net">Network</button
+          ><button data-v="save">Save</button>
+        </div>
+        <div id="tab-screen">
+          <label>Accent colour</label>
+          <span id="swatches" class="pal">
+            <button class="sw" data-c="#4dff5a" style="background: #4dff5a" title="Green"></button>
+            <button class="sw" data-c="#ffb000" style="background: #ffb000" title="Amber"></button>
+            <button class="sw" data-c="#33e1ff" style="background: #33e1ff" title="Cyan"></button>
+            <button class="sw" data-c="#e6eefc" style="background: #e6eefc" title="White"></button>
+            <button class="sw" data-c="#5b8cff" style="background: #5b8cff" title="Blue"></button>
+            <button class="sw" data-c="#ff5bd0" style="background: #ff5bd0" title="Magenta"></button>
+          </span>
+          <label>CRT FX (global) · intensity + speed</label>
+          <div class="strow" style="margin-bottom: 4px">
+            <button class="tbtn" id="fx-mode" title="Apply FX to the whole screen or per tile">GLOB</button>
+          </div>
+          <div id="g-fx">
+            <div class="fxrow">
+              <button class="tbtn" data-k="g" title="Grille + scanlines">GRL</button>
+              <div class="fxsl">
+                <input type="range" data-k="g" min="0" max="100" step="5" title="Intensity" /><b data-k="g">OFF</b>
+                <input type="range" data-k="gs" min="0" max="300" step="10" title="Raster speed" /><b data-k="gs"
+                  >×1.0</b
+                >
+              </div>
+            </div>
+            <div class="fxrow">
+              <button class="tbtn" data-k="n" title="Static noise">NSE</button>
+              <div class="fxsl">
+                <input type="range" data-k="n" min="0" max="100" step="5" title="Intensity" /><b data-k="n">OFF</b>
+                <input type="range" data-k="ns" min="0" max="300" step="10" title="Noise speed" /><b data-k="ns"
+                  >×1.0</b
+                >
+              </div>
+            </div>
+            <div class="fxrow">
+              <button class="tbtn" data-k="f" title="Flicker">FLK</button>
+              <div class="fxsl">
+                <input type="range" data-k="f" min="0" max="100" step="5" title="Intensity" /><b data-k="f">OFF</b>
+                <input type="range" data-k="fs" min="0" max="300" step="10" title="Flicker speed" /><b data-k="fs"
+                  >×1.0</b
+                >
+              </div>
+            </div>
+            <div class="fxrow">
+              <button class="tbtn" data-k="t" title="Phosphor trails">TRL</button>
+              <div class="fxsl">
+                <input type="range" data-k="t" min="0" max="100" step="5" title="Trail length" /><b data-k="t">OFF</b>
+                <input type="range" data-k="ts" min="10" max="300" step="10" title="Decay speed" /><b data-k="ts"
+                  >×1.0</b
+                >
+              </div>
+            </div>
+            <div class="fxrow">
+              <button class="tbtn" data-k="c" title="Curved glass + vignette">CRV</button>
+              <div class="fxsl">
+                <input type="range" data-k="c" min="0" max="100" step="5" title="Intensity" /><b data-k="c">OFF</b>
+                <input type="range" data-k="cs" min="0" max="300" step="10" title="Glass breathing speed" /><b
+                  data-k="cs"
+                  >×1.0</b
+                >
+              </div>
+            </div>
+            <div class="fxrow">
+              <button class="tbtn" data-k="w" title="Accent colour wash behind the glass">WSH</button>
+              <div class="fxsl">
+                <input type="range" data-k="w" min="0" max="100" step="5" title="Intensity" /><b data-k="w">OFF</b>
+                <span style="font-size: 9px; color: var(--accdim, #8fa)">accent overlay</span><b></b>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="tab-net" style="display: none">
+          <label>Board title · icon + name</label>
+          <div style="display: flex; gap: 8px">
+            <input
+              type="text"
+              id="set-icon"
+              class="tin"
+              maxlength="2"
+              style="width: 56px; text-transform: none"
+              title="Icon"
+            />
+            <input type="text" id="set-title" class="tin" style="flex: 1" title="Board name" />
+          </div>
+          <label>Netdata host (http://ip:19999)</label>
+          <input type="text" id="set-host" class="tin" style="text-transform: none" />
+          <label>Update interval (ms)</label>
+          <input type="number" id="set-refresh" class="tin" min="250" step="250" style="width: 120px" />
+          <div class="row" style="justify-content: flex-start">
+            <button class="pri" id="set-hostapply">Apply & reload</button>
+          </div>
+          <div class="hint">Also settable with ?host=http://ip:19999 in the URL. Stored in this browser.</div>
+        </div>
+        <div id="tab-save" style="display: none">
+          <label>Backup (layout, grid, custom styles, host)</label>
+          <div class="row" style="justify-content: flex-start">
+            <button id="set-export">Export file</button>
+            <button id="set-import">Import file</button>
+            <input type="file" id="set-file" accept="application/json" style="display: none" />
+          </div>
+          <div class="hint">Import overwrites the current dashboard and reloads.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="cmodal" style="z-index: 40">
+      <div class="panel" style="width: 360px">
+        <h3>DELETE STYLE?</h3>
+        <label style="font-size: 11px; line-height: 1.6"
+          >This removes the style permanently. Tiles using it fall back to the Equalizer style.</label
+        >
+        <div class="row">
+          <button id="cm-no">Cancel</button><button class="del" id="cm-yes" style="margin-right: 0">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="smodal" style="z-index: 30">
+      <div class="panel sedit">
+        <div class="ehead">
+          <h3>STYLE CREATOR</h3>
+          <button class="tbtn" id="se-x" title="Close">✕</button>
+        </div>
+        <div class="ebody">
+          <div>
+            <canvas id="se-cv" class="secv"></canvas>
+            <div class="hint">
+              drag empty = new bar · drag corner = reshape · drag inside = move<br />
+              double-click edge = add node · double-click node = remove node<br />
+              circle / donut: 4 corner handles resize only · shape buttons place at the selected colour node's band
+            </div>
+          </div>
+          <div class="shapebar">
+            <button class="tbtn shp" id="shp-sq" title="Square">■</button>
+            <button class="tbtn shp" id="shp-pie" title="Quarter circle">◔</button>
+            <button class="tbtn shp" id="shp-dnt" title="Quarter donut">◠</button>
+            <button class="tbtn shp" id="shp-fcir" title="Full circle">●</button>
+            <button class="tbtn shp" id="shp-fdnt" title="Full donut">◎</button>
+          </div>
+          <div class="eright" style="flex: 0 0 250px">
+            <label>Name</label><input type="text" id="se-name" maxlength="14" class="tin" placeholder="MY STYLE" />
+            <label>Fill direction (whole style)</label>
+            <div class="seg" id="se-dir"><button data-v="h">→ Horiz</button><button data-v="v">↑ Vert</button></div>
+            <label>Mask bar width · <span id="se-mbv">OFF</span></label>
+            <input type="range" id="se-mbars" min="0" max="6" step="1" value="0" style="width: 100%" />
+            <label>Mask segment height · <span id="se-msv">OFF</span></label>
+            <input type="range" id="se-msegs" min="0" max="6" step="1" value="0" style="width: 100%" />
+            <label>Snap to grid</label>
+            <div class="seg"><button id="se-snap" class="on">Snap 1/24</button></div>
+            <div id="se-shopts" style="visibility: hidden">
+              <label>Shape band · colour node №</label>
+              <div class="seg" id="se-band">
+                <button data-v="-1" title="Auto (position colour, global fill)">A</button><button data-v="0">1</button
+                ><button data-v="1">2</button><button data-v="2">3</button><button data-v="3">4</button
+                ><button data-v="4">5</button>
+              </div>
+              <label>Shape fill · click again = next mode</label>
+              <div class="seg" id="se-fd">
+                <button data-v="g" title="Follow style direction">G</button
+                ><button data-v="h" title="Horizontal (2 modes)">→</button
+                ><button data-v="v" title="Vertical (2 modes)">↑</button
+                ><button data-v="d" title="Diagonal (3 modes)">◿</button
+                ><button data-v="c" title="Circular - options below">◔</button
+                ><button data-v="i" title="Instant on/off">!</button>
+              </div>
+              <div id="se-copt" style="visibility: hidden">
+                <label>Circle pivot (of bounding square)</label>
+                <select id="se-cpiv">
+                  <option value="c">Centre</option>
+                  <option value="tl">Top-left</option>
+                  <option value="tr">Top-right</option>
+                  <option value="bl">Bottom-left</option>
+                  <option value="br">Bottom-right</option>
+                </select>
+                <label>Circle mode</label>
+                <select id="se-cmode">
+                  <option value="cw">Sweep · clockwise</option>
+                  <option value="ccw">Sweep · counter-clockwise</option>
+                  <option value="in">Radial · inside → out</option>
+                  <option value="out">Radial · outside → in</option>
+                </select>
+              </div>
+              <label>Rotate shape</label>
+              <div class="seg" id="se-srot"><button data-v="ccw">↺ 90°</button><button data-v="cw">↻ 90°</button></div>
+            </div>
+            <label>Live preview</label>
+            <div id="se-pvbox"><canvas id="se-pv" class="sepv"></canvas></div>
+            <div class="row">
+              <button id="se-delshape">Del shape</button>
+              <button id="se-clear">Clear</button>
+            </div>
+            <div class="row">
+              <button class="del" id="se-delstyle" style="display: none">Delete style</button>
+              <button id="se-cancel">Cancel</button>
+              <button class="pri" id="se-save">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ============ CONFIG ============
+      // Point at your Netdata instance with  ?host=http://192.168.1.1:19999  (remembered afterwards),
+      // or edit the default below. Optional:  ?refresh=2000  (ms between updates).
+      const _qs = new URLSearchParams(location.search);
+      const _host = (_qs.get("host") || localStorage.getItem("rc_host") || "http://10.13.37.1:19999").replace(
+        /\/+$/,
+        "",
+      );
+      if (_qs.get("host")) {
+        try {
+          localStorage.setItem("rc_host", _host);
+        } catch (e) {}
+      }
+      const NETDATA = _host;
+      if (_qs.get("refresh")) {
+        try {
+          localStorage.setItem("rc_refresh", String(Math.max(250, +_qs.get("refresh") || 1000)));
+        } catch (e) {}
+      }
+      const REFRESH_MS = Math.max(250, +_qs.get("refresh") || +localStorage.getItem("rc_refresh") || 1000);
+      const HISTORY = 60;
+      const MINCELL = 54,
+        GAP = 9; // min cell px, grid gap (matches CSS)
+      // ================================
+      const C = { green: "#4dff5a", amber: "#ffae00", red: "#ff2f24" };
+      const $ = (id) => document.getElementById(id);
+      const dpr = window.devicePixelRatio || 1;
+      const dimVal = (c, n) => c?.dimensions?.[n]?.value;
+      const sumDims = (c) => (c ? Object.values(c.dimensions).reduce((a, x) => a + (x.value || 0), 0) : 0);
+      const sumAbs = (c) => (c ? Object.values(c.dimensions).reduce((a, x) => a + Math.abs(x.value || 0), 0) : 0);
+      let LASTM = {};
+      const CORES = [];
+      let UID = 0;
+      let editMode = false;
+      let CUSTOM = {}; // user-created graph styles {id:{name,shapes:[{pts:[[x,y],..]}],fillDir,rot}}
+      function loadStyles() {
+        try {
+          CUSTOM = JSON.parse(localStorage.getItem("rc_styles") || "{}") || {};
+        } catch (e) {
+          CUSTOM = {};
+        }
+      }
+      function saveStyles() {
+        try {
+          localStorage.setItem("rc_styles", JSON.stringify(CUSTOM));
+        } catch (e) {}
+      }
+      const grid = $("grid");
+      const gridState = {
+        cell: 90,
+        rows: 6,
+        cols: 8,
+        cellWant: 90,
+        rowsWant: 6,
+        colsWant: 8, // *Want = user's setting; cell/rows/cols = clamped to window
+        alignH: "start",
+        alignV: "start",
+        accent: "#4dff5a",
+        icon: "◆",
+        title: "System Monitor",
+        fx: { g: 55, n: 55, f: 0, t: 55, c: 55, gs: 100, ns: 100, fs: 100, ts: 100, cs: 100, w: 0, mode: "g" },
+      }; // CRT FX: grille, noise, flicker, trails, curve, level %
+
+      function netRate(m, dir) {
+        const s = m["system.net"];
+        let v =
+          dimVal(s, dir) ??
+          dimVal(s, dir === "received" ? "in" : "out") ??
+          dimVal(s, dir === "received" ? "InOctets" : "OutOctets");
+        if (v == null) {
+          let sum = 0,
+            found = false;
+          for (const k in m) {
+            if (/^net\.(?!lo\b)/.test(k)) {
+              const d = dimVal(m[k], dir) ?? dimVal(m[k], dir === "received" ? "in" : "out");
+              if (d != null) {
+                found = true;
+                sum += Math.abs(d);
+              }
+            }
+          }
+          v = found ? sum : 0;
+        }
+        return Math.abs(v) / 1000;
+      }
+
+      const SPECS = [
+        {
+          key: "cpu",
+          id: "system.cpu",
+          label: "CPU",
+          unit: "%",
+          type: "cpu",
+          dyn: "pct",
+          max: 100,
+          w: 2,
+          h: 2,
+          calc: (m) => {
+            const i = dimVal(m["system.cpu"], "idle");
+            return i != null ? 100 - i : sumDims(m["system.cpu"]);
+          },
+        },
+        {
+          key: "mem",
+          id: "system.ram",
+          label: "Memory",
+          unit: "%",
+          type: "memv",
+          dyn: "pct",
+          max: 100,
+          numpos: "bottom",
+          h: 2,
+          calc: (m) => {
+            const r = m["system.ram"],
+              t = sumDims(r),
+              u = dimVal(r, "used");
+            return t ? (u / t) * 100 : null;
+          },
+        },
+        {
+          key: "swap",
+          id: "system.swap",
+          label: "Swap",
+          unit: "%",
+          type: "seg",
+          dyn: "pct",
+          max: 100,
+          calc: (m) => {
+            const s = m["system.swap"],
+              u = dimVal(s, "used") || 0,
+              f = dimVal(s, "free") || 0;
+            return u + f ? (u / (u + f)) * 100 : 0;
+          },
+        },
+        {
+          key: "load",
+          id: "system.load",
+          label: "Load 1m",
+          unit: "",
+          type: "eq",
+          max: null,
+          calc: (m) => dimVal(m["system.load"], "load1"),
+        },
+        {
+          key: "netrx",
+          id: "system.net",
+          label: "Net Down",
+          unit: "mbit",
+          type: "eq",
+          max: null,
+          calc: (m) => netRate(m, "received"),
+        },
+        {
+          key: "nettx",
+          id: "system.net",
+          label: "Net Up",
+          unit: "mbit",
+          type: "eq",
+          max: null,
+          calc: (m) => netRate(m, "sent"),
+        },
+        {
+          key: "tcp",
+          id: "ipv4.sockstat_tcp_sockets",
+          label: "TCP Conn",
+          unit: "n",
+          type: "eq",
+          max: null,
+          calc: (m) => dimVal(m["ipv4.sockstat_tcp_sockets"], "inuse") ?? sumDims(m["ipv4.sockstat_tcp_sockets"]),
+        },
+        {
+          key: "sock",
+          id: "ipv4.sockstat_sockets",
+          label: "Sockets",
+          unit: "n",
+          type: "eq",
+          max: null,
+          calc: (m) => dimVal(m["ipv4.sockstat_sockets"], "used"),
+        },
+        {
+          key: "ior",
+          id: "system.io",
+          label: "Disk Read",
+          unit: "kbs",
+          type: "eq",
+          max: null,
+          calc: (m) => Math.abs(dimVal(m["system.io"], "in") || 0),
+        },
+        {
+          key: "iow",
+          id: "system.io",
+          label: "Disk Write",
+          unit: "kbs",
+          type: "eq",
+          max: null,
+          calc: (m) => Math.abs(dimVal(m["system.io"], "out") || 0),
+        },
+        {
+          key: "intr",
+          id: "system.intr",
+          label: "Interrupts",
+          unit: "ps",
+          type: "eq",
+          max: null,
+          calc: (m) => Math.abs(dimVal(m["system.intr"], "interrupts") ?? sumDims(m["system.intr"])),
+        },
+        {
+          key: "ctx",
+          id: "system.ctxt",
+          label: "Ctx Switch",
+          unit: "ps",
+          type: "eq",
+          max: null,
+          calc: (m) => Math.abs(dimVal(m["system.ctxt"], "switches") || 0),
+        },
+        {
+          key: "forks",
+          id: "system.forks",
+          label: "Forks",
+          unit: "ps",
+          type: "eq",
+          max: null,
+          calc: (m) => Math.abs(dimVal(m["system.forks"], "started") || 0),
+        },
+        {
+          key: "procs",
+          id: "system.processes",
+          label: "Procs",
+          unit: "n",
+          type: "eq",
+          max: null,
+          calc: (m) => dimVal(m["system.processes"], "running") ?? sumDims(m["system.processes"]),
+        },
+        {
+          key: "entropy",
+          id: "system.entropy",
+          label: "Entropy",
+          unit: "n",
+          type: "eq",
+          max: null,
+          calc: (m) => dimVal(m["system.entropy"], "entropy"),
+        },
+      ];
+
+      const cards = {},
+        hist = {};
+      let built = false;
+
+      // ---------- fixed-grid placement ----------
+      function maxBottom() {
+        let m = gridState.rows;
+        for (const s of SPECS) {
+          if (cards[s.key] && s.row) m = Math.max(m, s.row - 1 + (s.h || 1));
+        }
+        return m;
+      }
+      function occ(ex) {
+        const R = Math.max(gridState.rows, maxBottom()) + 3;
+        const g = Array.from({ length: R }, () => Array(gridState.cols).fill(false));
+        for (const s of SPECS) {
+          if (!cards[s.key] || s.key === ex || !s.col) continue;
+          for (let r = s.row - 1; r < s.row - 1 + (s.h || 1); r++)
+            for (let c = s.col - 1; c < s.col - 1 + (s.w || 1); c++)
+              if (r >= 0 && r < R && c >= 0 && c < gridState.cols) g[r][c] = true;
+        }
+        return g;
+      }
+      function fits(col, row, w, h, ex) {
+        if (col < 1 || row < 1 || col + w - 1 > gridState.cols) return false;
+        const g = occ(ex);
+        for (let r = row - 1; r < row - 1 + h; r++)
+          for (let c = col - 1; c < col - 1 + w; c++) {
+            if (r < g.length && g[r][c]) return false;
+          }
+        return true;
+      }
+      function findSpot(w, h) {
+        for (let row = 1; row + h - 1 <= gridState.rows; row++)
+          for (let col = 1; col + w - 1 <= gridState.cols; col++) {
+            if (fits(col, row, w, h, null)) return { col, row };
+          }
+        return null;
+      }
+      function autoPlace(w, h) {
+        return findSpot(w, h) || { col: 1, row: 1 };
+      }
+      function styleTile(el, s) {
+        el.style.gridColumn = `${s.col} / span ${s.w || 1}`;
+        el.style.gridRow = `${s.row} / span ${s.h || 1}`;
+      }
+      function applyGrid() {
+        grid.style.gridTemplateColumns = `repeat(${gridState.cols}, ${gridState.cell}px)`;
+        grid.style.gridAutoRows = `${gridState.cell}px`;
+        grid.style.gridTemplateRows = `repeat(${gridState.rows}, ${gridState.cell}px)`;
+        // if the content overflows the box, centre/end alignment would spill past the TOP/LEFT clip
+        // edge and slice tile borders off - fall back to start so overflow always clips at the bottom
+        const contentW = gridState.cols * gridState.cell + (gridState.cols - 1) * GAP;
+        const contentH = gridState.rows * gridState.cell + (gridState.rows - 1) * GAP;
+        const ah = availH();
+        grid.style.justifyContent = contentW > availW() ? "start" : gridState.alignH || "start";
+        grid.style.alignContent = contentH > ah ? "start" : gridState.alignV || "start";
+        grid.style.height = ah + "px";
+      }
+      function availW() {
+        return grid.parentElement.clientWidth;
+      }
+      function availH() {
+        const r = grid.getBoundingClientRect();
+        return Math.max(140, window.innerHeight - r.top - 14);
+      }
+      function clampGrid() {
+        const aw = availW(),
+          ah = availH();
+        const colsMax = Math.max(1, Math.floor((aw + GAP) / (MINCELL + GAP)));
+        const rowsMax = Math.max(1, Math.floor((ah + GAP) / (MINCELL + GAP)));
+        // don't allow shrinking past placed widgets (would clip/delete them)
+        let cCols = 1,
+          cRows = 1;
+        for (const s of SPECS) {
+          if (cards[s.key]) {
+            cCols = Math.max(cCols, s.col + (s.w || 1) - 1);
+            cRows = Math.max(cRows, s.row + (s.h || 1) - 1);
+          }
+        }
+        // never clamp below the placed tiles' extent - the scale shrinks instead (no overlap, no crushing)
+        gridState.cols = Math.max(cCols, Math.min(colsMax, gridState.colsWant || gridState.cols));
+        gridState.rows = Math.max(cRows, Math.min(rowsMax, gridState.rowsWant || gridState.rows));
+        const cellMax = Math.max(
+          MINCELL,
+          Math.floor(
+            Math.min(
+              (aw - (gridState.cols - 1) * GAP) / gridState.cols,
+              (ah - (gridState.rows - 1) * GAP) / gridState.rows,
+            ),
+          ),
+        );
+        gridState.cell = Math.min(Math.max(MINCELL, gridState.cellWant || gridState.cell), cellMax);
+        $("sc-cols").min = cCols;
+        $("sc-cols").max = Math.max(colsMax, cCols);
+        $("sc-cols").value = gridState.cols;
+        $("sc-rows").min = cRows;
+        $("sc-rows").max = Math.max(rowsMax, cRows);
+        $("sc-rows").value = gridState.rows;
+        $("sc-scale").min = MINCELL;
+        $("sc-scale").max = cellMax;
+        $("sc-scale").value = gridState.cell;
+      }
+      function clampTiles() {
+        for (const s of SPECS) {
+          if (!cards[s.key]) continue;
+          s.w = Math.min(s.w || 1, gridState.cols);
+          s.h = Math.min(s.h || 1, gridState.rows);
+          if (s.col + s.w - 1 > gridState.cols) s.col = Math.max(1, gridState.cols - s.w + 1);
+          if (s.row + s.h - 1 > gridState.rows) s.row = Math.max(1, gridState.rows - s.h + 1);
+          const el = $("c-" + s.key)?.closest(".card");
+          if (el) styleTile(el, s);
+        }
+      }
+      function packTiles(vertical) {
+        const list = SPECS.filter((s) => cards[s.key])
+          .slice()
+          .sort((a, b) => (vertical ? a.col - b.col || a.row - b.row : a.row - b.row || a.col - b.col));
+        const placed = [];
+        const free = (c, r, w, h) => {
+          if (c + w - 1 > gridState.cols || r + h - 1 > gridState.rows) return false;
+          for (const p of placed) {
+            if (!(c + w - 1 < p.c || c > p.c + p.w - 1 || r + h - 1 < p.r || r > p.r + p.h - 1)) return false;
+          }
+          return true;
+        };
+        list.forEach((s) => {
+          const w = s.w || 1,
+            h = s.h || 1;
+          let done = false;
+          if (vertical) {
+            for (let c = 1; c + w - 1 <= gridState.cols && !done; c++)
+              for (let r = 1; r + h - 1 <= gridState.rows && !done; r++) {
+                if (free(c, r, w, h)) {
+                  s.col = c;
+                  s.row = r;
+                  done = true;
+                }
+              }
+          } else {
+            for (let r = 1; r + h - 1 <= gridState.rows && !done; r++)
+              for (let c = 1; c + w - 1 <= gridState.cols && !done; c++) {
+                if (free(c, r, w, h)) {
+                  s.col = c;
+                  s.row = r;
+                  done = true;
+                }
+              }
+          }
+          if (!done) {
+            s.col = 1;
+            s.row = 1;
+          }
+          placed.push({ c: s.col, r: s.row, w, h });
+          const el = $("c-" + s.key)?.closest(".card");
+          if (el) styleTile(el, s);
+        });
+        saveLayout();
+        clampGrid();
+        refreshPlaceholders();
+      }
+
+      function addTile(s) {
+        if (cards[s.key]) return null;
+        if (!SPECS.includes(s)) SPECS.push(s);
+        s.w = s.w || 1;
+        s.h = s.h || 1;
+        if (!(s.col && s.row && fits(s.col, s.row, s.w, s.h, s.key))) {
+          const p = autoPlace(s.w, s.h);
+          s.col = p.col;
+          s.row = p.row;
+        }
+        hist[s.key] = hist[s.key] || [];
+        cards[s.key] = s;
+        const acc = stopsOf(s)[0].c;
+        const el = document.createElement("div");
+        el.className =
+          "card" +
+          (s.border === "classic"
+            ? " classic"
+            : s.border === "mon"
+              ? " monitor" + (s.bordercol === "beige" ? " beige" : "")
+              : "");
+        el.dataset.k = s.key;
+        el.style.setProperty("--accent", acc);
+        el.draggable = editMode;
+        styleTile(el, s);
+        const sub = s.type === "cpu" && CORES.length ? ` · ${CORES.length} CORES` : "";
+        const head = `<div class="lbl"${s.titleon === false ? ' style="visibility:hidden"' : ""}><span>${s.label}${sub}</span><span class="u">${unitLabel(s.unit)}</span></div>`;
+        const disp = `<div class="disp" style="text-align:${s.numalign || (s.numpos === "bottom" ? "center" : "right")}${s.numon === false ? ";visibility:hidden" : ""}"><span class="ghost" id="g-${s.key}"></span><span class="val" id="v-${s.key}">-</span></div>`;
+        const canv = `<canvas id="c-${s.key}"></canvas>`;
+        const mid = s.numpos === "bottom" ? canv + disp : disp + canv;
+        el.innerHTML =
+          `<div class="wash"></div><div class="hx" data-k="${s.key}" title="Remove tile">✕</div><div class="he" data-k="${s.key}" title="Edit tile">✎</div>` +
+          (s.titlepos === "bottom" ? mid + head : head + mid);
+        grid.appendChild(el);
+        return el;
+      }
+      function removeTile(key) {
+        const s = SPECS.find((x) => x.key === key);
+        if (!s) return;
+        SPECS.splice(SPECS.indexOf(s), 1);
+        delete cards[key];
+        delete hist[key];
+        const c = $("c-" + key);
+        if (c) c.closest(".card").remove();
+        saveLayout();
+        clampGrid();
+        refreshPlaceholders();
+      }
+      function rebuildTile(s) {
+        const old = $("c-" + s.key)?.closest(".card");
+        if (old) old.remove();
+        delete cards[s.key];
+        if (s.col + (s.w || 1) - 1 > gridState.cols) s.col = Math.max(1, gridState.cols - (s.w || 1) + 1);
+        addTile(s);
+      }
+      function moveTile(key, col, row) {
+        const s = cards[key];
+        if (!s) return;
+        if (!fits(col, row, s.w || 1, s.h || 1, key)) return;
+        s.col = col;
+        s.row = row;
+        styleTile($("c-" + key).closest(".card"), s);
+        saveLayout();
+        clampGrid();
+        refreshPlaceholders();
+      }
+
+      function build(m) {
+        Object.keys(m)
+          .filter((k) => /^cpu\.cpu\d+$/.test(k))
+          .sort()
+          .forEach((k) => CORES.push(k));
+        for (const k in m) {
+          const c = m[k];
+          if (c && /celsius/i.test(c.units || "") && !/max|min/i.test(k)) {
+            SPECS.push({
+              key: "temp",
+              id: k,
+              label: "Temp",
+              unit: "c",
+              type: "seg",
+              dyn: "temp",
+              max: 100,
+              calc: (mm) => Object.values(mm[k].dimensions)[0].value,
+            });
+            break;
+          }
+        }
+        grid.innerHTML = "";
+        let needFill = false;
+        const saved = loadLayout();
+        if (saved) {
+          const byKey = {};
+          SPECS.forEach((s) => (byKey[s.key] = s));
+          saved.forEach((t) => {
+            if (t.user) {
+              if (!(t.id in m)) return;
+              const s = makeUserSpec(t.id, t.type, t.w, t.h, t.numpos, t.key, t.dim, t.mode);
+              s.unit = t.unit;
+              s.label = t.label;
+              applyOpts(s, t);
+              addTile(s);
+            } else {
+              const s = byKey[t.key];
+              if (!s || !(s.id in m)) return;
+              applyOpts(s, t);
+              addTile(s);
+            }
+          });
+        } else {
+          for (const s of SPECS.slice()) {
+            if (s.id in m) addTile(s);
+          }
+          needFill = true;
+        }
+        built = true;
+        clampGrid();
+        clampTiles();
+        applyGrid();
+        if (needFill) fillGrid();
+        refreshPlaceholders();
+      }
+
+      function unitLabel(u) {
+        return { "%": "%", mbit: "Mb/s", kbs: "KB/s", ps: "/s", n: "", c: "°C", "": "" }[u] ?? u;
+      }
+      function segStr(v, u) {
+        if (v == null || isNaN(v)) return "-";
+        let s;
+        if (u === "%" || u === "c") s = String(Math.round(v));
+        else if (u === "") s = v.toFixed(2);
+        else if (u === "mbit") s = v >= 100 ? String(Math.round(v)) : v.toFixed(1);
+        else s = String(Math.round(v));
+        if (s.replace(".", "").length > 5) s = String(Math.round(v));
+        return s;
+      }
+      const ghostOf = (s) => s.replace(/[^.]/g, "8");
+      function stopsOf(s) {
+        if (s.stops && s.stops.length) return s.stops;
+        if (s.cols && s.cols.length === 3)
+          return [
+            { p: 0, c: s.cols[0] },
+            { p: 0.42, c: s.cols[1] },
+            { p: 0.72, c: s.cols[2] },
+          ];
+        return [
+          { p: 0, c: C.green },
+          { p: 0.42, c: C.amber },
+          { p: 0.72, c: C.red },
+        ];
+      }
+      function band(frac, st) {
+        let col = st[0].c;
+        for (const s2 of st) {
+          if (frac >= s2.p) col = s2.c;
+        }
+        return col;
+      }
+      function accentOf(s, v) {
+        const c = stopsOf(s);
+        if (s.dyn === "pct" || s.dyn === "temp") return band(Math.min(1, v / 100), c);
+        return c[0].c;
+      }
+      function setup(cv) {
+        const W = Math.max(2, Math.round(cv.clientWidth * dpr)),
+          H = Math.max(2, Math.round(cv.clientHeight * dpr));
+        if (cv.width !== W) cv.width = W;
+        if (cv.height !== H) cv.height = H; // only resize when needed - keeps pixels for phosphor trails
+        return [cv.getContext("2d"), W, H];
+      }
+      let FRAMEFRAC = 1; // <1 while redrawing at animation rate, so trails decay per-second not per-frame
+      function fadeOrClear(ctx, w, h, s) {
+        const f = tileFx(s),
+          t = f ? +f.t || 0 : 0;
+        if (t > 0) {
+          const spd = Math.max(0.1, (f.ts == null ? 100 : +f.ts) / 100); // trail speed slider = decay rate
+          let a = 1 - Math.pow(1 - (0.8 - 0.65 * (t / 100)), spd * FRAMEFRAC);
+          ctx.fillStyle = `rgba(0,0,0,${a.toFixed(4)})`;
+          ctx.fillRect(0, 0, w, h);
+        } else ctx.clearRect(0, 0, w, h);
+      }
+
+      const OFF = "rgba(90,120,90,.10)";
+      const EQSEG = 6; // segments per equalizer/extra bar
+      function mxOf(s) {
+        return s.max != null ? s.max : s._mx || 100;
+      }
+      function eqCols(s) {
+        return Math.max(3, s.bars || (s.mark === "squares" ? 10 : 22));
+      }
+      function drawEq(ctx, w, h, s, data) {
+        fadeOrClear(ctx, w, h, s);
+        const c = stopsOf(s),
+          sq = s.mark === "squares",
+          vert = s.dir === "v",
+          E = Math.min(2, s.extra | 0);
+        const SEG = EQSEG,
+          COLS = eqCols(s);
+        const live = data.slice(-COLS);
+        const casc = (s._casc || []).slice(0, E);
+        const cascVals = casc.flatMap((L) => L.cols || []);
+        const mx = Math.max(...live, ...cascVals, 1e-6) * 1.1;
+        const gc = (sq ? 3 : 2) * dpr,
+          gs = (sq ? 3 : 2) * dpr,
+          gapS = 6 * dpr;
+        // live strip + E full-width history strips stacked below (beside, when vertical); dim cells never move
+        const strips = 1 + E;
+        function drawStrip(sidx, vals, off, rev) {
+          let x0, y0, sw, sh;
+          if (!vert) {
+            sh = (h - (strips - 1) * gapS) / strips;
+            x0 = 0;
+            y0 = sidx * (sh + gapS);
+            sw = w;
+          } else {
+            sw = (w - (strips - 1) * gapS) / strips;
+            x0 = sidx * (sw + gapS);
+            y0 = 0;
+            sh = h;
+          }
+          function valAt(idx) {
+            if (rev) {
+              const j = COLS - 1 - idx;
+              return j < vals.length ? vals[j] : null;
+            } // fill right → left, cells stay put
+            return idx >= off && idx - off < vals.length ? vals[idx - off] : null;
+          }
+          if (!vert) {
+            const cw = (sw - gc * (COLS - 1)) / COLS,
+              segH = (sh - gs * (SEG - 1)) / SEG;
+            for (let idx = 0; idx < COLS; idx++) {
+              const v = valAt(idx),
+                lit = v == null ? 0 : Math.max(0, Math.min(SEG, Math.round((v / mx) * SEG)));
+              for (let r = 0; r < SEG; r++) {
+                const on = r < lit,
+                  col = band(r / (SEG - 1), c);
+                ctx.fillStyle = on ? col : OFF;
+                ctx.shadowColor = col;
+                ctx.shadowBlur = on ? 4 * dpr : 0;
+                ctx.fillRect(
+                  x0 + idx * (cw + gc),
+                  y0 + sh - (r + 1) * segH - r * gs,
+                  sq ? Math.min(cw, segH) : cw,
+                  segH,
+                );
+              }
+            }
+          } else {
+            const rh = (sh - gc * (COLS - 1)) / COLS,
+              segW = (sw - gs * (SEG - 1)) / SEG;
+            for (let idx = 0; idx < COLS; idx++) {
+              const v = valAt(idx),
+                lit = v == null ? 0 : Math.max(0, Math.min(SEG, Math.round((v / mx) * SEG)));
+              for (let r = 0; r < SEG; r++) {
+                const on = r < lit,
+                  col = band(r / (SEG - 1), c);
+                ctx.fillStyle = on ? col : OFF;
+                ctx.shadowColor = col;
+                ctx.shadowBlur = on ? 4 * dpr : 0;
+                ctx.fillRect(x0 + r * (segW + gs), y0 + idx * (rh + gc), segW, sq ? Math.min(rh, segW) : rh);
+              }
+            }
+          }
+        }
+        drawStrip(0, live, COLS - live.length, false); // live window scrolls as before
+        for (let e = 0; e < E; e++) drawStrip(e + 1, (casc[e] && casc[e].cols) || [], 0, true); // history fills right → left
+        ctx.shadowBlur = 0;
+      }
+      function drawSeg(ctx, w, h, s, val) {
+        fadeOrClear(ctx, w, h, s);
+        const c = stopsOf(s),
+          N = Math.max(3, s.bars || 20),
+          gap = 2 * dpr,
+          sw = (w - gap * (N - 1)) / N,
+          on = (val / mxOf(s)) * N;
+        const top = s.align === "top";
+        for (let i = 0; i < N; i++) {
+          const frac = i / (N - 1),
+            lit = i < on;
+          const bh = h * (0.18 + 0.82 * frac);
+          const col = band(frac, c);
+          ctx.fillStyle = lit ? col : OFF;
+          ctx.shadowColor = col;
+          ctx.shadowBlur = lit ? 5 * dpr : 0;
+          ctx.fillRect(i * (sw + gap), top ? 0 : h - bh, sw, bh);
+        }
+        ctx.shadowBlur = 0;
+      }
+      function coreVal(k) {
+        const c = LASTM[k];
+        if (!c) return 0;
+        const i = dimVal(c, "idle");
+        return Math.max(0, Math.min(100, i != null ? 100 - i : sumDims(c)));
+      }
+      function drawCpu(ctx, w, h, s) {
+        fadeOrClear(ctx, w, h, s);
+        // one labelled column per value: CPU cores for the built-in tile, the chart's dimensions for user tiles
+        let items;
+        if (s.user && s.id && LASTM[s.id]) {
+          const dims = LASTM[s.id].dimensions,
+            keys = Object.keys(dims);
+          const vals = keys.map((k) => Math.abs(dims[k].value || 0));
+          const total = vals.reduce((a, x) => a + x, 0) || 1,
+            mxv = Math.max(...vals, 1e-9);
+          items = keys.map((k, i) => ({
+            lab: (k.length > 7 ? k.slice(0, 7) : k).toUpperCase(),
+            frac: s.mode === "pct" ? vals[i] / total : vals[i] / mxv,
+            txt: s.mode === "pct" ? Math.round((vals[i] / total) * 100) + "%" : segStr(vals[i], ""),
+          }));
+        } else {
+          const list = CORES.length ? CORES : ["system.cpu"];
+          items = list.map((k, ci) => {
+            const v = coreVal(k);
+            return { lab: "C" + ci, frac: v / 100, txt: Math.round(v) + "%" };
+          });
+        }
+        const n = Math.max(1, items.length),
+          gap = Math.min(18 * dpr, (w * 0.3) / n),
+          bw = (w - gap * (n - 1)) / n;
+        const showv = s.cvals !== false;
+        const c = stopsOf(s),
+          top = showv ? 16 * dpr : 2 * dpr,
+          ROWS = Math.max(3, s.bars || 10),
+          gs = 3 * dpr,
+          sh = (h - top - gs * (ROWS - 1)) / ROWS;
+        ctx.textAlign = "center";
+        ctx.font = `bold ${Math.max(6 * dpr, Math.min(11 * dpr, Math.round(bw / 4)))}px "Courier New",monospace`;
+        items.forEach((it, ci) => {
+          const frac = Math.max(0, Math.min(1, it.frac)),
+            lit = frac > 0 ? Math.min(ROWS, Math.ceil(frac * ROWS)) : 0,
+            x = ci * (bw + gap);
+          if (showv) {
+            const acc = band(frac, c);
+            ctx.fillStyle = acc;
+            ctx.shadowColor = acc;
+            ctx.shadowBlur = 6 * dpr;
+            ctx.fillText(it.lab + " " + it.txt, x + bw / 2, top - 5 * dpr);
+            ctx.shadowBlur = 0;
+          }
+          for (let r = 0; r < ROWS; r++) {
+            const fr2 = r / (ROWS - 1),
+              on = r < lit;
+            const col = band(fr2, c);
+            const y = h - (r + 1) * sh - r * gs;
+            ctx.fillStyle = on ? col : OFF;
+            ctx.shadowColor = col;
+            ctx.shadowBlur = on ? 4 * dpr : 0;
+            ctx.fillRect(x, y, bw, sh);
+          }
+        });
+        ctx.shadowBlur = 0;
+      }
+      function drawMemV(ctx, w, h, s, val) {
+        fadeOrClear(ctx, w, h, s);
+        const c = stopsOf(s),
+          ROWS = Math.max(3, s.bars || 12),
+          gs = 3 * dpr,
+          sh = (h - gs * (ROWS - 1)) / ROWS,
+          align = s.align || "center";
+        const lit = val > 0 ? Math.min(ROWS, Math.ceil((val / mxOf(s)) * ROWS)) : 0;
+        for (let i = 0; i < ROWS; i++) {
+          const frac = i / (ROWS - 1),
+            on = i < lit;
+          const bw = w * (0.3 + 0.7 * frac);
+          const x = align === "left" ? 0 : align === "right" ? w - bw : (w - bw) / 2,
+            y = h - (i + 1) * sh - i * gs,
+            col = band(frac, c);
+          ctx.fillStyle = on ? col : OFF;
+          ctx.shadowColor = col;
+          ctx.shadowBlur = on ? 4 * dpr : 0;
+          ctx.fillRect(x, y, bw, sh);
+        }
+        ctx.shadowBlur = 0;
+      }
+      function drawLine(ctx, w, h, s, data) {
+        fadeOrClear(ctx, w, h, s);
+        const c = stopsOf(s),
+          fill = s.fill !== false,
+          N = Math.max(4, s.bars || 40),
+          slice = data.slice(-N);
+        const mx = s.max != null ? s.max : Math.max(...slice, 1e-6) * 1.1;
+        const x = (i) => (i / (N - 1)) * w,
+          y = (v) => h - (v / mx) * h * 0.92 - 2,
+          off = N - slice.length;
+        const col = band(Math.min(1, (slice[slice.length - 1] || 0) / mx), c);
+        if (fill) {
+          ctx.beginPath();
+          ctx.moveTo(x(off), h);
+          slice.forEach((v, i) => ctx.lineTo(x(off + i), y(v)));
+          ctx.lineTo(x(N - 1), h);
+          ctx.closePath();
+          const g = ctx.createLinearGradient(0, 0, 0, h);
+          g.addColorStop(0, col + "55");
+          g.addColorStop(1, col + "00");
+          ctx.fillStyle = g;
+          ctx.fill();
+        }
+        ctx.beginPath();
+        slice.forEach((v, i) => {
+          const px = x(off + i),
+            py = y(v);
+          i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+        });
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 1.6 * dpr;
+        ctx.shadowColor = col;
+        ctx.shadowBlur = 6 * dpr;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        const lv = slice[slice.length - 1];
+        if (lv != null) {
+          ctx.fillStyle = "#fff";
+          ctx.beginPath();
+          ctx.arc(x(N - 1), y(lv), 2 * dpr, 0, 7);
+          ctx.fill();
+        }
+      }
+      function drawBar(ctx, w, h, s, data) {
+        fadeOrClear(ctx, w, h, s);
+        const c = stopsOf(s),
+          N = Math.max(3, s.bars || 24),
+          gap = 2 * dpr,
+          slice = data.slice(-N);
+        const mx = s.max != null ? s.max : Math.max(...slice, 1e-6) * 1.1,
+          bw = (w - gap * (N - 1)) / N,
+          off = N - slice.length;
+        const al = s.align === "top" ? "top" : s.align === "mid" ? "mid" : "bottom";
+        slice.forEach((v, i) => {
+          const frac = Math.min(1, v / mx),
+            bh = Math.max(1, frac * h * 0.96),
+            col = band(frac, c),
+            xx = (off + i) * (bw + gap);
+          const yy = al === "top" ? 0 : al === "mid" ? (h - bh) / 2 : h - bh;
+          ctx.fillStyle = col;
+          ctx.shadowColor = col;
+          ctx.shadowBlur = 4 * dpr;
+          ctx.fillRect(xx, yy, bw, bh);
+        });
+        ctx.shadowBlur = 0;
+      }
+      function cascadeFeed(s, v, E, T, COLS) {
+        if (!s._casc || s._casc.length !== E || s._cascCols !== COLS) {
+          s._casc = Array.from({ length: E }, () => ({ sum: 0, cnt: 0, cols: [] }));
+          s._cascCols = COLS;
+        }
+        let carry = v;
+        for (let i = 0; i < E; i++) {
+          const L = s._casc[i];
+          let val;
+          if (i === 0) {
+            L.sum += carry;
+            L.cnt++;
+            if (L.cnt < T) return;
+            val = L.sum / L.cnt;
+            L.sum = 0;
+            L.cnt = 0;
+          } else val = carry;
+          L.cols.push(val);
+          if (L.cols.length >= COLS) {
+            carry = L.cols.reduce((a, x) => a + x, 0) / L.cols.length;
+            L.cols = [];
+          } else return;
+        }
+      }
+      function rotPt(p, rot) {
+        const x = p[0],
+          y = p[1];
+        return rot === 90 ? [1 - y, x] : rot === 180 ? [1 - x, 1 - y] : rot === 270 ? [y, 1 - x] : [x, y];
+      }
+      function drawCustomDef(ctx, w, h, def, s, val) {
+        const st = stopsOf(s),
+          f = Math.max(0, Math.min(1, val / mxOf(s))),
+          rot = def.rot || 0,
+          vert = def.fillDir !== "h";
+        const MB = def.gw | 0 || 0,
+          MS = def.gh | 0 || 0; // mask cell size in design-grid cells (0 = off)
+        const aspG = def.asp || 1;
+        const GNX = aspG >= 1 ? SEGRID : Math.max(4, Math.round(SEGRID * aspG));
+        const GNY = aspG >= 1 ? Math.max(4, Math.round(SEGRID / aspG)) : SEGRID;
+        const shapes = (def.shapes || []).map((sh) => ({
+          pts: sh.pts.map((p) => rotPt(p, rot)),
+          band: sh.band,
+          fd: sh.fd,
+          cpiv: sh.cpiv,
+          cmode: sh.cmode,
+        }));
+        // keep the authored aspect: letterbox the design inside the canvas instead of stretching it
+        let ox = 0,
+          oy = 0,
+          dw = w,
+          dh = h;
+        if (def.asp) {
+          if (w / h > def.asp) {
+            dw = h * def.asp;
+            ox = (w - dw) / 2;
+          } else if (w / h < def.asp) {
+            dh = w / def.asp;
+            oy = (h - dh) / 2;
+          }
+        }
+        const path = (pts) => {
+          ctx.beginPath();
+          pts.forEach((p, i) => {
+            const X = ox + p[0] * dw,
+              Y = oy + p[1] * dh;
+            i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y);
+          });
+          ctx.closePath();
+        };
+        // angular span of a shape around a pivot (so circular sweep starts at the shape's own edge)
+        function circRange(xs, ys, cx, cy) {
+          const angs = xs
+            .map((x, i) => [x - cx, ys[i] - cy])
+            .filter((p) => Math.hypot(p[0], p[1]) > 0.5)
+            .map((p) => Math.atan2(p[1], p[0]))
+            .sort((a, b) => a - b);
+          if (angs.length < 2) return { a0: -Math.PI / 2, ext: 2 * Math.PI };
+          let gi = 0,
+            gmax = -1;
+          for (let i = 0; i < angs.length; i++) {
+            const nxt = angs[(i + 1) % angs.length] + (i === angs.length - 1 ? 2 * Math.PI : 0);
+            const g = nxt - angs[i];
+            if (g > gmax) {
+              gmax = g;
+              gi = i;
+            }
+          }
+          if (gmax < Math.PI / 3) return { a0: -Math.PI / 2, ext: 2 * Math.PI }; // pivot enclosed → full ring
+          return { a0: angs[(gi + 1) % angs.length], ext: 2 * Math.PI - gmax };
+        }
+        function diagFrame(fd, x0, y0, x1, y1) {
+          const wb = x1 - x0,
+            hb = y1 - y0;
+          let ox, oy, ang;
+          if (fd === "d2") {
+            ox = x0;
+            oy = y0;
+            ang = Math.atan2(hb, wb);
+          } else if (fd === "d3") {
+            ox = x1;
+            oy = y0;
+            ang = Math.atan2(hb, -wb);
+          } else {
+            ox = x0;
+            oy = y1;
+            ang = Math.atan2(-hb, wb);
+          }
+          const ca = Math.cos(ang),
+            sa = Math.sin(ang);
+          const pr = (X, Y) => [(X - ox) * ca + (Y - oy) * sa, -(X - ox) * sa + (Y - oy) * ca];
+          const cs = [pr(x0, y0), pr(x1, y0), pr(x1, y1), pr(x0, y1)];
+          return {
+            ox,
+            oy,
+            ang,
+            u0: Math.min(...cs.map((p) => p[0])),
+            u1: Math.max(...cs.map((p) => p[0])),
+            v0: Math.min(...cs.map((p) => p[1])),
+            v1: Math.max(...cs.map((p) => p[1])),
+          };
+        }
+        function tileCells(u0, u1, v0, v1, cu, cv2) {
+          // tile [u0,u1]×[v0,v1] with fixed-size cells (last cell may crop at the edge)
+          const gu = cu >= u1 - u0 - 0.5 ? 0 : Math.min(3 * dpr, cu * 0.16),
+            gv = cv2 >= v1 - v0 - 0.5 ? 0 : Math.min(3 * dpr, cv2 * 0.16);
+          for (let u = u0; u < u1 - 0.5; u += cu) {
+            const w2 = Math.min(cu, u1 - u);
+            for (let v = v0; v < v1 - 0.5; v += cv2) {
+              const h2 = Math.min(cv2, v1 - v);
+              ctx.rect(u + gu / 2, v + gv / 2, w2 - gu, h2 - gv);
+            }
+          }
+        }
+        function clipGrid(fd, x0, y0, x1, y1, cinf) {
+          // mask cells sized in design-grid units → boundaries align with the snap grid
+          if (!MB && !MS) return;
+          const base = fd[0];
+          const ux = dw / GNX,
+            uy = dh / GNY,
+            unit = Math.min(ux, uy);
+          ctx.beginPath();
+          if (base === "c" && cinf) {
+            const { cx, cy, R, a0, ext } = cinf;
+            const rA = cinf.r0 || 0,
+              rr = (cinf.r1 != null ? cinf.r1 : R) - rA;
+            const rings = MS ? Math.max(1, Math.round(rr / (unit * MS))) : 1;
+            const rMid = rA + rr / 2;
+            const sect = MB ? Math.max(1, Math.round((ext * Math.max(rMid, unit)) / (unit * MB))) : 1;
+            const ga = sect > 1 ? (ext / sect) * 0.12 : 0;
+            for (let b = 0; b < sect; b++) {
+              const aa = a0 + (ext * b) / sect + ga / 2,
+                ab = a0 + (ext * (b + 1)) / sect - ga / 2;
+              for (let sg = 0; sg < rings; sg++) {
+                const r1 = rA + (rr * (sg + 1)) / rings,
+                  r0 = sg ? rA + (rr * sg) / rings + (rr / rings) * 0.12 : rA;
+                ctx.moveTo(cx + r1 * Math.cos(aa), cy + r1 * Math.sin(aa));
+                ctx.arc(cx, cy, r1, aa, ab);
+                if (r0 > 0) {
+                  ctx.lineTo(cx + r0 * Math.cos(ab), cy + r0 * Math.sin(ab));
+                  ctx.arc(cx, cy, r0, ab, aa, true);
+                } else ctx.lineTo(cx, cy);
+                ctx.closePath();
+              }
+            }
+          } else if (base === "d") {
+            const fr = diagFrame(fd, ox, oy, ox + dw, oy + dh);
+            ctx.translate(fr.ox, fr.oy);
+            ctx.rotate(fr.ang);
+            tileCells(
+              fr.u0,
+              fr.u1,
+              fr.v0,
+              fr.v1,
+              MB ? unit * MB : fr.u1 - fr.u0 + 1,
+              MS ? unit * MS : fr.v1 - fr.v0 + 1,
+            );
+            ctx.rotate(-fr.ang);
+            ctx.translate(-fr.ox, -fr.oy);
+          } else if (base === "v") {
+            tileCells(ox, ox + dw, oy, oy + dh, MS ? ux * MS : dw + 1, MB ? uy * MB : dh + 1);
+          } else {
+            tileCells(ox, ox + dw, oy, oy + dh, MB ? ux * MB : dw + 1, MS ? uy * MS : dh + 1);
+          }
+          ctx.clip();
+        }
+        function fillClip(fd, L, x0, y0, x1, y1, cinf) {
+          const base = fd[0],
+            wb = x1 - x0,
+            hb = y1 - y0;
+          ctx.beginPath();
+          if (base === "i" || L >= 1) {
+            ctx.rect(x0 - 1, y0 - 1, wb + 2, hb + 2);
+          } else if (base === "h") {
+            if (fd === "h2") ctx.rect(x1 - wb * L, y0 - 1, wb * L, hb + 2);
+            else ctx.rect(x0, y0 - 1, wb * L, hb + 2);
+          } else if (base === "v") {
+            if (fd === "v2") ctx.rect(x0 - 1, y0, wb + 2, hb * L);
+            else ctx.rect(x0 - 1, y1 - hb * L, wb + 2, hb * L);
+          } else if (base === "d") {
+            const fr = diagFrame(fd, x0, y0, x1, y1);
+            ctx.translate(fr.ox, fr.oy);
+            ctx.rotate(fr.ang);
+            ctx.rect(fr.u0, fr.v0 - 2, (fr.u1 - fr.u0) * L, fr.v1 - fr.v0 + 4);
+            ctx.rotate(-fr.ang);
+            ctx.translate(-fr.ox, -fr.oy);
+          } else if (base === "c" && cinf) {
+            const { cx, cy, R, a0, ext, mode } = cinf;
+            const rA = cinf.r0 || 0,
+              rB = cinf.r1 != null ? cinf.r1 : R;
+            if (mode === "in") {
+              ctx.arc(cx, cy, Math.max(0.5, rA + (rB - rA) * L), 0, 2 * Math.PI);
+            } else if (mode === "out") {
+              ctx.rect(x0 - 2, y0 - 2, wb + 4, hb + 4);
+              ctx.arc(cx, cy, Math.max(0, rA + (rB - rA) * (1 - L)), 0, 2 * Math.PI);
+              ctx.clip("evenodd");
+              return;
+            } else if (mode === "ccw") {
+              ctx.moveTo(cx, cy);
+              ctx.arc(cx, cy, R * 2, a0 + ext, a0 + ext - ext * L, true);
+              ctx.closePath();
+            } else {
+              ctx.moveTo(cx, cy);
+              ctx.arc(cx, cy, R * 2, a0, a0 + ext * L);
+              ctx.closePath();
+            }
+          } else ctx.rect(x0 - 1, y0 - 1, wb + 2, hb + 2);
+          ctx.clip();
+        }
+        shapes.forEach((sh) => {
+          const xs = sh.pts.map((p) => ox + p[0] * dw),
+            ys = sh.pts.map((p) => oy + p[1] * dh);
+          const x0 = Math.min(...xs),
+            x1 = Math.max(...xs),
+            y0 = Math.min(...ys),
+            y1 = Math.max(...ys);
+          const banded = sh.band != null;
+          let fdEff, L, col;
+          if (banded) {
+            const b = Math.min(sh.band, st.length - 1),
+              p0 = st[b].p,
+              p1 = st[b + 1] ? st[b + 1].p : 1;
+            L = Math.max(0, Math.min(1, (f - p0) / Math.max(1e-6, p1 - p0)));
+            col = st[b].c;
+            fdEff = sh.fd || (vert ? "v" : "h");
+          } else {
+            fdEff = vert ? "v" : "h";
+            L = f;
+            const cx2 = sh.pts.reduce((a, p) => a + p[0], 0) / sh.pts.length,
+              cy2 = sh.pts.reduce((a, p) => a + p[1], 0) / sh.pts.length;
+            col = band(vert ? 1 - cy2 : cx2, st);
+          }
+          let cinf = null;
+          if (fdEff[0] === "c") {
+            const piv = sh.cpiv || "c";
+            const cx = piv === "tl" || piv === "bl" ? x0 : piv === "tr" || piv === "br" ? x1 : (x0 + x1) / 2;
+            const cy = piv === "tl" || piv === "tr" ? y0 : piv === "bl" || piv === "br" ? y1 : (y0 + y1) / 2;
+            // radial extent of THE SHAPE around the pivot, so radial fills align with it
+            let rmax = 0;
+            for (let i = 0; i < xs.length; i++) rmax = Math.max(rmax, Math.hypot(xs[i] - cx, ys[i] - cy));
+            let rmin = 0;
+            const enclosed = inPoly(
+              [cx, cy],
+              xs.map((x, i) => [x, ys[i]]),
+            );
+            if (!enclosed) {
+              rmin = Infinity;
+              for (let i = 0; i < xs.length; i++) {
+                const j = (i + 1) % xs.length;
+                const abx = xs[j] - xs[i],
+                  aby = ys[j] - ys[i],
+                  L2 = abx * abx + aby * aby || 1e-9;
+                let t = ((cx - xs[i]) * abx + (cy - ys[i]) * aby) / L2;
+                t = Math.max(0, Math.min(1, t));
+                rmin = Math.min(rmin, Math.hypot(cx - (xs[i] + t * abx), cy - (ys[i] + t * aby)));
+              }
+              if (!isFinite(rmin)) rmin = 0;
+            }
+            const mode = sh.cmode || (fdEff === "c2" ? "ccw" : "cw");
+            cinf =
+              fdEff === "c3" || enclosed // pivot inside the shape = always a full 360° sweep
+                ? { cx, cy, R: rmax + 1, r0: rmin, r1: rmax, a0: -Math.PI / 2, ext: 2 * Math.PI, mode }
+                : Object.assign({ cx, cy, R: rmax + 1, r0: rmin, r1: rmax, mode }, circRange(xs, ys, cx, cy));
+          }
+          ctx.save();
+          path(sh.pts);
+          ctx.clip();
+          clipGrid(fdEff, x0, y0, x1, y1, cinf);
+          ctx.fillStyle = OFF;
+          ctx.fillRect(x0 - 1, y0 - 1, x1 - x0 + 2, y1 - y0 + 2);
+          if (banded ? L > 0 : f > 0) {
+            if (banded) fillClip(fdEff, L, x0, y0, x1, y1, cinf);
+            else {
+              ctx.beginPath();
+              if (vert) ctx.rect(ox, oy + dh * (1 - f), dw, dh * f);
+              else ctx.rect(ox, oy, dw * f, dh);
+              ctx.clip();
+            }
+            ctx.fillStyle = col;
+            ctx.shadowColor = col;
+            ctx.shadowBlur = 4 * dpr;
+            ctx.fillRect(x0 - 1, y0 - 1, x1 - x0 + 2, y1 - y0 + 2);
+            ctx.shadowBlur = 0;
+          }
+          ctx.restore();
+        });
+      }
+      function drawCustom(ctx, w, h, s, val) {
+        fadeOrClear(ctx, w, h, s);
+        const def = CUSTOM[s.type];
+        if (!def) return;
+        drawCustomDef(ctx, w, h, def, s, val);
+      }
+      function drawAny(cx, w, h, s, data, val) {
+        if (s.type === "cpu") drawCpu(cx, w, h, s);
+        else if (s.type === "memv") drawMemV(cx, w, h, s, val);
+        else if (s.type === "seg") drawSeg(cx, w, h, s, val);
+        else if (s.type === "line") drawLine(cx, w, h, s, data);
+        else if (s.type === "bar") drawBar(cx, w, h, s, data);
+        else if (CUSTOM[s.type]) drawCustom(cx, w, h, s, val);
+        else drawEq(cx, w, h, s, data);
+      }
+      // scale modes: auto = 0→peak, win = min→max of the visible window (small changes fill the graph), fix = user range
+      function scaleView(s, data) {
+        if (s.scale === "win") {
+          const lo = Math.min(...data),
+            hi = Math.max(...data);
+          return { base: lo, top: Math.max(hi - lo, 1e-9) };
+        }
+        if (s.scale === "fix") {
+          const lo = s.smin != null ? +s.smin : 0;
+          const hi = s.smax != null ? +s.smax : null;
+          return { base: lo, top: hi != null ? Math.max(hi - lo, 1e-9) : null };
+        }
+        return null;
+      }
+      function render(s, feed) {
+        const data = hist[s.key];
+        if (!data.length) return;
+        const val = data[data.length - 1];
+        const acc = accentOf(s, val),
+          str = segStr(val, s.unit),
+          ncol = s.numcol === "acc" ? gridState.accent : s.numcol || acc;
+        const v = $("v-" + s.key);
+        if (!v) return;
+        v.textContent = str;
+        v.style.color = ncol;
+        v.style.textShadow = `0 0 6px ${ncol},0 0 14px ${ncol}`;
+        $("g-" + s.key).textContent = ghostOf(str);
+        const cv = $("c-" + s.key);
+        if (!cv) return;
+        const [cx, cw, ch2] = setup(cv);
+        let ddata = s.type === "line" && s.anim === "smooth" ? interpData(data, 0) : data; // smooth lines run 1s behind
+        let dval = val;
+        const sv = scaleView(s, data),
+          om = s.max;
+        if (sv) {
+          ddata = ddata.map((x) => x - sv.base);
+          dval = val - sv.base;
+          if (sv.top != null) s.max = sv.top;
+        }
+        s._mx = s.max != null ? s.max : Math.max(...ddata, 1e-6) * 1.1;
+        if (feed && s.type === "eq" && (s.extra | 0) > 0)
+          cascadeFeed(s, dval, Math.min(2, s.extra | 0), eqCols(s), eqCols(s));
+        drawAny(cx, cw, ch2, s, ddata, dval);
+        s.max = om;
+        const card = v.closest(".card");
+        card.style.setProperty("--accent", acc);
+        applyWash(card, s);
+      }
+      function applyWash(card, s, force) {
+        const wel = card.querySelector(".wash");
+        if (!wel) return;
+        // per-tile FX (wash included) only exist in INDIV mode - global mode owns the whole screen
+        const wv = force || gridState.fx.mode === "i" ? +s.wash || 0 : 0;
+        wel.style.display = wv > 0 ? "block" : "none";
+        if (wv > 0) {
+          wel.style.background = s.washc && s.washc !== "acc" ? s.washc : gridState.accent;
+          wel.style.opacity = ((wv / 100) * 0.9).toFixed(3);
+        }
+      }
+
+      // ---------- persistence ----------
+      function userCalc(id, dim, mode) {
+        return (m) => {
+          const c = m[id];
+          if (!c) return null;
+          const dims = c.dimensions;
+          const total = Object.values(dims).reduce((a, x) => a + Math.abs(x.value || 0), 0);
+          if (dim === "*" || !dims[dim]) return mode === "pct" ? 100 : total;
+          const v = Math.abs(dims[dim].value || 0);
+          return mode === "pct" ? (total ? (v / total) * 100 : 0) : v;
+        };
+      }
+      function makeUserSpec(id, type, w, h, numpos, key, dim, mode) {
+        dim = dim || "*";
+        mode = mode || "abs";
+        const unit = mode === "pct" ? "%" : (LASTM[id] && LASTM[id].units) || "";
+        return {
+          key: key || "u" + UID++,
+          id,
+          label: id,
+          unit,
+          type,
+          w: +w || 1,
+          h: +h || 1,
+          numpos,
+          max: mode === "pct" ? 100 : null,
+          dyn: mode === "pct" ? "pct" : undefined,
+          user: true,
+          dim,
+          mode,
+          calc: userCalc(id, dim, mode),
+        };
+      }
+      function loadLayout() {
+        try {
+          const a = JSON.parse(localStorage.getItem("rc_layout") || "null");
+          return Array.isArray(a) && a.length ? a : null;
+        } catch (e) {
+          return null;
+        }
+      }
+      function saveLayout() {
+        try {
+          localStorage.setItem(
+            "rc_layout",
+            JSON.stringify(
+              SPECS.filter((s) => cards[s.key]).map((s) => ({
+                key: s.key,
+                col: s.col,
+                row: s.row,
+                w: s.w,
+                h: s.h,
+                type: s.type,
+                numpos: s.numpos,
+                numalign: s.numalign,
+                numcol: s.numcol,
+                numon: s.numon,
+                titleon: s.titleon,
+                titlepos: s.titlepos,
+                border: s.border,
+                bordercol: s.bordercol,
+                fx: s.fx,
+                wash: s.wash,
+                washc: s.washc,
+                cols: s.cols,
+                stops: s.stops,
+                bars: s.bars,
+                align: s.align,
+                mark: s.mark,
+                dir: s.dir,
+                extra: s.extra,
+                fill: s.fill,
+                anim: s.anim,
+                cvals: s.cvals,
+                scale: s.scale,
+                smin: s.smin,
+                smax: s.smax,
+                dim: s.dim,
+                mode: s.mode,
+                user: !!s.user,
+                id: s.user ? s.id : undefined,
+                unit: s.user ? s.unit : undefined,
+                label: s.user ? s.label : undefined,
+              })),
+            ),
+          );
+        } catch (e) {}
+      }
+      function applyOpts(s, t) {
+        [
+          "type",
+          "numpos",
+          "numalign",
+          "numcol",
+          "numon",
+          "titleon",
+          "titlepos",
+          "border",
+          "bordercol",
+          "fx",
+          "wash",
+          "washc",
+          "w",
+          "h",
+          "col",
+          "row",
+          "cols",
+          "stops",
+          "bars",
+          "align",
+          "mark",
+          "dir",
+          "extra",
+          "fill",
+          "anim",
+          "cvals",
+          "scale",
+          "smin",
+          "smax",
+          "dim",
+          "mode",
+        ].forEach((k) => {
+          if (t[k] !== undefined) s[k] = t[k];
+        });
+        if (s.fx) s.fx = fxNorm(s.fx);
+      }
+      function loadGrid() {
+        try {
+          const g = JSON.parse(localStorage.getItem("rc_grid") || "null");
+          if (g) {
+            gridState.cell = g.cell || 90;
+            gridState.rows = g.rows || 6;
+            gridState.cols = g.cols || 8;
+            gridState.cellWant = g.cellWant || g.cell || 90;
+            gridState.rowsWant = g.rowsWant || g.rows || 6;
+            gridState.colsWant = g.colsWant || g.cols || 8;
+            gridState.alignH = g.alignH || "start";
+            gridState.alignV = g.alignV || "start";
+            gridState.accent = g.accent || "#4dff5a";
+            gridState.icon = g.icon != null ? g.icon : "◆";
+            gridState.title = g.title || "System Monitor";
+            gridState.fx = Object.assign(
+              { g: 55, n: 55, f: 0, t: 55, c: 55, gs: 100, ns: 100, fs: 100, ts: 100, cs: 100, w: 0, mode: "g" },
+              g.fx || {},
+            );
+            // migrate legacy 0/1 flags + LVL to per-effect intensities
+            const F = gridState.fx;
+            if (["g", "n", "f", "t", "c"].every((k) => (+F[k] || 0) <= 1)) {
+              const l = F.l == null ? 55 : +F.l;
+              ["g", "n", "f", "t", "c"].forEach((k) => (F[k] = F[k] ? l : 0));
+            }
+            delete F.l;
+          }
+        } catch (e) {}
+      }
+      function saveGrid() {
+        try {
+          localStorage.setItem("rc_grid", JSON.stringify(gridState));
+        } catch (e) {}
+      }
+
+      function refreshPlaceholders() {
+        grid.querySelectorAll(".addcard").forEach((e) => e.remove());
+        if (!editMode) return;
+        const g = occ(null);
+        for (let r = 1; r <= gridState.rows; r++)
+          for (let c = 1; c <= gridState.cols; c++) {
+            if (g[r - 1] && g[r - 1][c - 1]) continue;
+            const p = document.createElement("div");
+            p.className = "addcard";
+            p.textContent = "+";
+            p.style.gridColumn = c + " / span 1";
+            p.style.gridRow = r + " / span 1";
+            p.dataset.col = c;
+            p.dataset.row = r;
+            grid.appendChild(p);
+          }
+      }
+
+      // ---------- tile editor ----------
+      let editKey = null,
+        pendingCell = null,
+        mConf = null,
+        pSpec = null,
+        PH = [],
+        selStop = 0,
+        multiKeys = null,
+        multiBase = null;
+      const PALETTE = ["#4dff5a", "#ffb000", "#33e1ff", "#e6eefc", "#5b8cff", "#ff5bd0", "#ff2f24"];
+      const BUILTIN = [
+        ["eq", "Equalizer"],
+        ["seg", "H-Wedge"],
+        ["memv", "V-Wedge"],
+        ["cpu", "Columns"],
+        ["line", "Line"],
+        ["bar", "Bars"],
+      ];
+      const SAMPLE = Array.from({ length: 26 }, (_, i) => 50 + 45 * Math.sin(i / 2.5));
+      function setSeg(id, val) {
+        [...$(id).children].forEach((b) => b.classList.toggle("on", b.dataset.v === String(val)));
+      }
+      function defBars(style) {
+        return style === "eq"
+          ? 22
+          : style === "memv"
+            ? 12
+            : style === "seg"
+              ? 20
+              : style === "line"
+                ? 40
+                : style === "bar"
+                  ? 24
+                  : 10;
+      }
+      function defStops() {
+        return [
+          { p: 0, c: C.green },
+          { p: 0.42, c: C.amber },
+          { p: 0.72, c: C.red },
+        ];
+      }
+      function modalOpen() {
+        return $("modal").style.display === "flex";
+      }
+      function closeModal() {
+        $("modal").style.display = "none";
+        pSpec = null;
+        multiKeys = null;
+        multiBase = null;
+        document.querySelector(".panel.editor").classList.remove("multi");
+        grid.querySelectorAll(".card.msel").forEach((c) => c.classList.remove("msel"));
+      }
+
+      // --- source (chart / dimension / mode) ---
+      function fillCharts(sel) {
+        $("m-chart").innerHTML = Object.keys(LASTM)
+          .sort()
+          .map((k) => `<option value="${k}">${k}${LASTM[k].units ? " (" + LASTM[k].units + ")" : ""}</option>`)
+          .join("");
+        if (sel && LASTM[sel]) $("m-chart").value = sel;
+      }
+      function fillDims(id, sel) {
+        const c = LASTM[id],
+          dims = c ? Object.keys(c.dimensions) : [];
+        $("m-dim").innerHTML =
+          `<option value="*">Sum of all dimensions</option>` +
+          dims.map((d) => `<option value="${d}">${d}</option>`).join("");
+        $("m-dim").value = sel && (sel === "*" || dims.includes(sel)) ? sel : "*";
+      }
+      function srcChanged(resetDim) {
+        if (!mConf || !mConf.user) return;
+        mConf.id = $("m-chart").value || mConf.id;
+        if (resetDim) fillDims(mConf.id, "*");
+        mConf.dim = $("m-dim").value || "*";
+        mConf.unit = mConf.mode === "pct" ? "%" : (LASTM[mConf.id] && LASTM[mConf.id].units) || "";
+        mConf.max = mConf.mode === "pct" ? 100 : null;
+        mConf.dyn = mConf.mode === "pct" ? "pct" : null;
+        mConf.label = mConf.id;
+        mConf.calcRef = userCalc(mConf.id, mConf.dim, mConf.mode);
+        PH = [];
+        try {
+          const v = mConf.calcRef(LASTM);
+          if (v != null && !isNaN(v)) PH.push(v);
+        } catch (e) {}
+        buildChartNav();
+        refreshPreview();
+      }
+      $("m-chart").onchange = () => srcChanged(true);
+      $("m-dim").onchange = () => srcChanged(false);
+
+      // --- chart navigator (left tree; remembers expanded groups + scroll) ---
+      const navOpen = new Set();
+      let navScroll = 0;
+      function buildChartNav() {
+        const nav = $("chartnav");
+        if (!mConf || !mConf.user) {
+          nav.style.display = "none";
+          return;
+        }
+        nav.style.display = "";
+        const groups = {};
+        Object.keys(LASTM)
+          .sort()
+          .forEach((k) => {
+            const g = k.split(".")[0];
+            (groups[g] = groups[g] || []).push(k);
+          });
+        const used = new Set(SPECS.filter((s) => cards[s.key]).map((s) => s.id));
+        nav.innerHTML = Object.keys(groups)
+          .sort()
+          .map((g) => {
+            const open = navOpen.has(g);
+            return (
+              `<div class="cn-g${open ? " open" : ""}" data-g="${g}"><span>${g}</span><span>${open ? "−" : "+"}${groups[g].length}</span></div>` +
+              (open
+                ? groups[g]
+                    .map(
+                      (k) =>
+                        `<div class="cn-i${used.has(k) ? " used" : ""}${mConf.id === k ? " sel" : ""}" data-k="${k}" title="${k}${used.has(k) ? " · already on dashboard" : ""}">${k.slice(g.length + 1) || k}</div>`,
+                    )
+                    .join("")
+                : "")
+            );
+          })
+          .join("");
+        nav.scrollTop = navScroll;
+      }
+      $("chartnav").onscroll = (e) => {
+        navScroll = e.target.scrollTop;
+      };
+      $("chartnav").onclick = (e) => {
+        const g = e.target.closest(".cn-g");
+        if (g) {
+          const k = g.dataset.g;
+          navOpen.has(k) ? navOpen.delete(k) : navOpen.add(k);
+          buildChartNav();
+          return;
+        }
+        const it = e.target.closest(".cn-i");
+        if (it && mConf && mConf.user) {
+          $("m-chart").value = it.dataset.k;
+          srcChanged(true);
+        }
+      };
+      $("m-scale").onclick = (e) => {
+        const b = e.target.closest("button");
+        if (!b || !mConf) return;
+        mConf.scale = b.dataset.v;
+        setSeg("m-scale", b.dataset.v);
+        refreshPreview();
+      };
+      $("m-smin").oninput = (e) => {
+        if (!mConf) return;
+        mConf.smin = e.target.value === "" ? null : +e.target.value;
+        refreshPreview();
+      };
+      $("m-smax").oninput = (e) => {
+        if (!mConf) return;
+        mConf.smax = e.target.value === "" ? null : +e.target.value;
+        refreshPreview();
+      };
+      $("m-mode").onclick = (e) => {
+        const b = e.target.closest("button");
+        if (!b || !mConf) return;
+        mConf.mode = b.dataset.v;
+        setSeg("m-mode", mConf.mode);
+        srcChanged(false);
+      };
+
+      // --- style strip (instant switch) ---
+      function thumbSpec(style) {
+        return {
+          type: style,
+          stops: mConf.stops,
+          max: 100,
+          _mx: 100,
+          align: mConf.align,
+          mark: mConf.mark,
+          dir: mConf.dir,
+          extra: 0,
+          bars: 0,
+          fill: mConf.fill,
+        };
+      }
+      function drawStyleThumb(style, cv) {
+        if (!cv || !cv.clientWidth) return;
+        const w = (cv.width = cv.clientWidth * dpr),
+          h = (cv.height = cv.clientHeight * dpr),
+          ctx = cv.getContext("2d"),
+          s = thumbSpec(style);
+        if (CUSTOM[style]) drawCustomDef(ctx, w, h, CUSTOM[style], s, 70);
+        else if (style === "cpu") drawCpu(ctx, w, h, s);
+        else if (style === "memv") drawMemV(ctx, w, h, s, 70);
+        else if (style === "seg") drawSeg(ctx, w, h, s, 70);
+        else if (style === "line") drawLine(ctx, w, h, s, SAMPLE);
+        else if (style === "bar") drawBar(ctx, w, h, s, SAMPLE);
+        else drawEq(ctx, w, h, s, SAMPLE);
+      }
+      function redrawThumbs() {
+        [...$("m-styles").querySelectorAll(".stylebtn[data-v]")].forEach((b) =>
+          drawStyleThumb(b.dataset.v, b.querySelector("canvas")),
+        );
+      }
+      function renderStyleStrip() {
+        $("m-styles").innerHTML =
+          BUILTIN.map(
+            ([v, n]) =>
+              `<button type="button" class="stylebtn" data-v="${v}"><canvas></canvas><span>${n}</span></button>`,
+          ).join("") +
+          Object.keys(CUSTOM)
+            .map(
+              (id) =>
+                `<button type="button" class="stylebtn" data-v="${id}"><canvas></canvas><span>${CUSTOM[id].name || id}</span></button>`,
+            )
+            .join("") +
+          `<button type="button" class="stylebtn newstyle" id="newstyle" title="Create your own style">＋<span>New</span></button>`;
+        [...$("m-styles").querySelectorAll(".stylebtn[data-v]")].forEach((b) =>
+          b.classList.toggle("on", b.dataset.v === mConf.style),
+        );
+        redrawThumbs();
+      }
+      $("m-styles").onclick = (e) => {
+        if (e.target.closest("#newstyle")) {
+          seOpen(null);
+          return;
+        }
+        const b = e.target.closest(".stylebtn[data-v]");
+        if (!b) return;
+        mConf.style = b.dataset.v;
+        mConf.bars = defBars(mConf.style);
+        [...$("m-styles").querySelectorAll(".stylebtn[data-v]")].forEach((x) => x.classList.toggle("on", x === b));
+        buildStyleOpts();
+        refreshPreview();
+      };
+
+      // --- colour band bar (draggable % nodes) ---
+      function stopsUI() {
+        const st = mConf.stops;
+        if (selStop >= st.length) selStop = st.length - 1;
+        if (selStop < 0) selStop = 0;
+        const g = st
+          .map((s2, i) => `${s2.c} ${s2.p * 100}%, ${s2.c} ${st[i + 1] ? st[i + 1].p * 100 : 100}%`)
+          .join(",");
+        $("stopgrad").style.background = `linear-gradient(90deg,${g})`;
+        const bar = $("stopbar");
+        bar.querySelectorAll(".stopnode").forEach((n) => n.remove());
+        st.forEach((s2, i) => {
+          const n = document.createElement("div");
+          n.className = "stopnode" + (i === selStop ? " on" : "");
+          n.style.left = s2.p * 100 + "%";
+          n.style.background = s2.c;
+          n.dataset.i = i;
+          bar.appendChild(n);
+        });
+        $("stoppct").textContent = Math.round(st[selStop].p * 100) + "%";
+        [...$("stoppal").children].forEach((b) => b.classList.toggle("on", b.dataset.c === st[selStop].c));
+      }
+      function stopsChanged(light) {
+        if (pSpec) pSpec.stops = mConf.stops;
+        stopsUI();
+        previewRender();
+        updateMultiBtn();
+        if (!light) redrawThumbs();
+      }
+      let stopDrag = null;
+      $("stopbar").addEventListener("pointerdown", (e) => {
+        if (!mConf) return;
+        const rect = $("stopbar").getBoundingClientRect(),
+          n = e.target.closest(".stopnode");
+        if (n) {
+          selStop = +n.dataset.i;
+          if (selStop > 0) {
+            stopDrag = selStop;
+            $("stopbar").setPointerCapture(e.pointerId);
+          }
+          stopsChanged(true);
+          return;
+        }
+        if (mConf.stops.length >= 5) return; // click on bar: add a node here
+        const p = Math.max(0.02, Math.min(0.98, (e.clientX - rect.left) / rect.width));
+        const st = mConf.stops;
+        let i = st.findIndex((x) => x.p > p);
+        if (i < 0) i = st.length;
+        st.splice(i, 0, { p, c: band(p, st) });
+        selStop = i;
+        stopDrag = i;
+        $("stopbar").setPointerCapture(e.pointerId);
+        stopsChanged(true);
+      });
+      $("stopbar").addEventListener("pointermove", (e) => {
+        if (stopDrag == null) return;
+        const st = mConf.stops,
+          rect = $("stopbar").getBoundingClientRect();
+        const lo = st[stopDrag - 1].p + 0.02,
+          hi = st[stopDrag + 1] ? st[stopDrag + 1].p - 0.02 : 0.98;
+        st[stopDrag].p = Math.max(lo, Math.min(hi, (e.clientX - rect.left) / rect.width));
+        stopsChanged(true);
+      });
+      const stopUp = () => {
+        if (stopDrag == null) return;
+        stopDrag = null;
+        stopsChanged(false);
+      };
+      $("stopbar").addEventListener("pointerup", stopUp);
+      $("stopbar").addEventListener("pointercancel", stopUp);
+      $("stopadd").onclick = () => {
+        const st = mConf.stops;
+        if (st.length >= 5) return;
+        const a = st[selStop],
+          b = st[selStop + 1],
+          p = b ? (a.p + b.p) / 2 : Math.min(0.9, a.p + 0.15);
+        st.splice(selStop + 1, 0, { p, c: "#e6eefc" });
+        selStop++;
+        stopsChanged(false);
+      };
+      $("stopdel").onclick = () => {
+        const st = mConf.stops;
+        if (selStop === 0 || st.length <= 1) return;
+        st.splice(selStop, 1);
+        selStop--;
+        stopsChanged(false);
+      };
+      $("preset3").onclick = () => {
+        mConf.stops = defStops();
+        selStop = 0;
+        stopsChanged(false);
+      };
+      $("preset5").onclick = () => {
+        mConf.stops = [
+          { p: 0, c: "#4dff5a" },
+          { p: 0.2, c: "#c8ff2f" },
+          { p: 0.4, c: "#ffb000" },
+          { p: 0.6, c: "#ff6a00" },
+          { p: 0.8, c: "#ff2f24" },
+        ];
+        selStop = 0;
+        stopsChanged(false);
+      };
+      $("stoppal").innerHTML = PALETTE.map(
+        (c) => `<button type="button" class="sw" data-c="${c}" style="background:${c}"></button>`,
+      ).join("");
+      $("stoppal").onclick = (e) => {
+        const b = e.target.closest(".sw");
+        if (!b || !mConf) return;
+        mConf.stops[selStop].c = b.dataset.c;
+        stopsChanged(false);
+      };
+      $("stopacc").onclick = () => {
+        if (!mConf) return;
+        mConf.stops[selStop].c = gridState.accent;
+        stopsChanged(false);
+      };
+
+      // --- style-specific settings ---
+      function buildStyleOpts() {
+        let html = "";
+        if (CUSTOM[mConf.style]) {
+          html += `<div class="orow"><label>Custom style - click ✎ on its button to reshape it</label></div>`;
+        } else {
+          html += `<div class="orow"><label>Bar count · <span id="bc-val">${mConf.bars}</span></label><input type="range" id="m-bars" min="3" max="60" step="1" value="${mConf.bars}" style="width:100%"></div>`;
+          if (mConf.style === "memv")
+            html += `<div class="orow"><label>Align</label><div class="seg" id="m-align"><button data-v="left">Left</button><button data-v="center">Centre</button><button data-v="right">Right</button></div></div>`;
+          if (mConf.style === "cpu")
+            html += `<div class="orow"><label>Column values</label><div class="seg" id="m-cvals"><button data-v="on">Show</button><button data-v="off">Hide</button></div></div>`;
+          if (mConf.style === "seg")
+            html += `<div class="orow"><label>Anchor</label><div class="seg" id="m-align"><button data-v="bottom">Bottom</button><button data-v="top">Top</button></div></div>`;
+          if (mConf.style === "bar")
+            html += `<div class="orow"><label>Anchor</label><div class="seg" id="m-align"><button data-v="bottom">Bottom</button><button data-v="mid">Centre</button><button data-v="top">Top</button></div></div>`;
+          if (mConf.style === "line") {
+            html += `<div class="orow"><label>Fill</label><div class="seg" id="m-fill"><button data-v="on">On</button><button data-v="off">Off</button></div></div>`;
+            html += `<div class="orow"><label>Update</label><div class="seg" id="m-anim"><button data-v="step">1 T/S</button><button data-v="smooth">Smooth</button></div></div>`;
+          }
+          if (mConf.style === "eq") {
+            html += `<div class="orow"><label>Mark</label><div class="seg" id="m-mark"><button data-v="bars">Bars</button><button data-v="squares">Squares</button></div></div>`;
+            html += `<div class="orow"><label>Direction</label><div class="seg" id="m-dir"><button data-v="h">Horizontal</button><button data-v="v">Vertical</button></div></div>`;
+            html += `<div class="orow"><label>Extra history rows (below)</label><div class="seg" id="m-extra"><button data-v="0">0</button><button data-v="1">1</button><button data-v="2">2</button></div></div>`;
+          }
+        }
+        $("styleopts").innerHTML = html;
+        if ($("m-cvals")) setSeg("m-cvals", mConf.cvals === false ? "off" : "on");
+        if ($("m-align")) {
+          let a = mConf.align || "center";
+          if (mConf.style === "cpu")
+            html += `<div class="orow"><label>Column values</label><div class="seg" id="m-cvals"><button data-v="on">Show</button><button data-v="off">Hide</button></div></div>`;
+          if (mConf.style === "seg") a = a === "top" ? "top" : "bottom"; // legacy "center" → bottom (unchanged look)
+          if (mConf.style === "bar") a = a === "top" || a === "mid" ? a : "bottom";
+          setSeg("m-align", a);
+        }
+        if ($("m-fill")) setSeg("m-fill", mConf.fill === false ? "off" : "on");
+        if ($("m-anim")) setSeg("m-anim", mConf.anim || "step");
+        if ($("m-mark")) setSeg("m-mark", mConf.mark);
+        if ($("m-dir")) setSeg("m-dir", mConf.dir);
+        if ($("m-extra")) setSeg("m-extra", String(mConf.extra | 0));
+      }
+      $("styleopts").addEventListener("click", (e) => {
+        const b = e.target.closest("button[data-v]");
+        if (!b || !mConf) return;
+        const g = b.parentElement.id;
+        if (g === "m-align") mConf.align = b.dataset.v;
+        else if (g === "m-fill") mConf.fill = b.dataset.v === "on";
+        else if (g === "m-anim") mConf.anim = b.dataset.v;
+        else if (g === "m-cvals") mConf.cvals = b.dataset.v === "on";
+        else if (g === "m-mark") mConf.mark = b.dataset.v;
+        else if (g === "m-dir") mConf.dir = b.dataset.v;
+        else if (g === "m-extra") mConf.extra = +b.dataset.v;
+        else return;
+        setSeg(g, b.dataset.v);
+        redrawThumbs();
+        refreshPreview();
+      });
+      $("styleopts").addEventListener("input", (e) => {
+        if (e.target.id === "m-bars" && mConf) {
+          mConf.bars = +e.target.value;
+          $("bc-val").textContent = mConf.bars;
+          refreshPreview();
+        }
+      });
+      $("m-w").onclick = (e) => {
+        const b = e.target.closest("button");
+        if (!b || !mConf) return;
+        mConf.w = +b.dataset.v;
+        setSeg("m-w", b.dataset.v);
+        refreshPreview();
+      };
+      $("m-h").onclick = (e) => {
+        const b = e.target.closest("button");
+        if (!b || !mConf) return;
+        mConf.h = +b.dataset.v;
+        setSeg("m-h", b.dataset.v);
+        refreshPreview();
+      };
+      $("m-num").onclick = (e) => {
+        const b = e.target.closest("button");
+        if (!b || !mConf) return;
+        mConf.numpos = b.dataset.v;
+        setSeg("m-num", b.dataset.v);
+        if (!mConf._nalTouched) {
+          // follow the natural default until the user picks an alignment themselves
+          mConf.numalign = b.dataset.v === "bottom" ? "center" : "right";
+          setSeg("m-nal", mConf.numalign);
+        }
+        refreshPreview();
+      };
+      $("m-nal").onclick = (e) => {
+        const b = e.target.closest("button");
+        if (!b || !mConf) return;
+        mConf.numalign = b.dataset.v;
+        mConf._nalTouched = true;
+        setSeg("m-nal", b.dataset.v);
+        refreshPreview();
+      };
+      $("numpal").innerHTML = PALETTE.map(
+        (c) => `<button type="button" class="sw" data-c="${c}" style="background:${c}"></button>`,
+      ).join("");
+      function numColUI() {
+        $("m-nauto").classList.toggle("on", !mConf.numcol);
+        $("m-nacc").classList.toggle("on", mConf.numcol === "acc");
+        [...$("numpal").children].forEach((b) => b.classList.toggle("on", b.dataset.c === mConf.numcol));
+      }
+      $("m-nauto").onclick = () => {
+        if (!mConf) return;
+        mConf.numcol = null;
+        numColUI();
+        refreshPreview();
+      };
+      $("m-nacc").onclick = () => {
+        if (!mConf) return;
+        mConf.numcol = "acc"; // follows the accent, even when it changes later
+        numColUI();
+        refreshPreview();
+      };
+      $("m-numon").onclick = (e) => {
+        const b = e.target.closest("button");
+        if (!b || !mConf) return;
+        mConf.numon = b.dataset.v === "on";
+        setSeg("m-numon", b.dataset.v);
+        refreshPreview();
+      };
+      $("m-titleon").onclick = (e) => {
+        const b = e.target.closest("button");
+        if (!b || !mConf) return;
+        mConf.title3 = b.dataset.v;
+        setSeg("m-titleon", b.dataset.v);
+        refreshPreview();
+      };
+      $("m-bezel").onclick = (e) => {
+        const b = e.target.closest("button");
+        if (!b || !mConf) return;
+        mConf.bordercol = b.dataset.v;
+        setSeg("m-bezel", b.dataset.v);
+        refreshPreview();
+      };
+      $("m-border").onclick = (e) => {
+        const b = e.target.closest("button");
+        if (!b || !mConf) return;
+        mConf.border = b.dataset.v;
+        setSeg("m-border", b.dataset.v);
+        $("bezelrow").style.visibility = mConf.border === "mon" ? "visible" : "hidden";
+        refreshPreview();
+      };
+      function mFxUI() {
+        if (!mConf) return;
+        $("m-fx")
+          .querySelectorAll(".fxrow")
+          .forEach((row) => {
+            const k = row.querySelector("button").dataset.k,
+              v = (mConf.fx && +mConf.fx[k]) || 0;
+            const sv = mConf.fx && mConf.fx[k + "s"] != null ? +mConf.fx[k + "s"] : 100;
+            row.querySelector("button").classList.toggle("on", v > 0);
+            row.querySelector(`input[data-k="${k}"]`).value = v;
+            row.querySelector(`b[data-k="${k}"]`).textContent = v > 0 ? v + "%" : "OFF";
+            row.querySelector(`input[data-k="${k}s"]`).value = sv;
+            row.querySelector(`b[data-k="${k}s"]`).textContent = "×" + (sv / 100).toFixed(1);
+          });
+      }
+      $("m-fx").onclick = (e) => {
+        const b = e.target.closest("button");
+        if (!b || !mConf) return;
+        const k = b.dataset.k,
+          cur = +mConf.fx[k] || 0;
+        if (cur > 0) {
+          b.dataset.last = cur;
+          mConf.fx[k] = 0;
+        } else mConf.fx[k] = +b.dataset.last || 55;
+        mFxUI();
+        refreshPreview();
+      };
+      $("m-fx").addEventListener("input", (e) => {
+        const sl = e.target.closest("input[type=range]");
+        if (!sl || !mConf) return;
+        mConf.fx[sl.dataset.k] = +sl.value;
+        mFxUI();
+        refreshPreview();
+      });
+      // --- per-tile colour wash ---
+      $("mw-pal").innerHTML = PALETTE.map(
+        (c) => `<button type="button" class="sw" data-c="${c}" style="background:${c}"></button>`,
+      ).join("");
+      function mWashUI() {
+        if (!mConf) return;
+        const v = +mConf.wash || 0;
+        $("mw-btn").classList.toggle("on", v > 0);
+        $("mw-int").value = v;
+        $("mw-val").textContent = v > 0 ? v + "%" : "OFF";
+        $("mw-acc").classList.toggle("on", (mConf.washc || "acc") === "acc");
+        [...$("mw-pal").children].forEach((b) => b.classList.toggle("on", b.dataset.c === mConf.washc));
+      }
+      $("mw-btn").onclick = () => {
+        if (!mConf) return;
+        const cur = +mConf.wash || 0;
+        if (cur > 0) {
+          $("mw-btn").dataset.last = cur;
+          mConf.wash = 0;
+        } else mConf.wash = +$("mw-btn").dataset.last || 40;
+        mWashUI();
+        refreshPreview();
+      };
+      $("mw-int").oninput = (e) => {
+        if (!mConf) return;
+        mConf.wash = +e.target.value;
+        mWashUI();
+        refreshPreview();
+      };
+      $("mw-acc").onclick = () => {
+        if (!mConf) return;
+        mConf.washc = "acc";
+        mWashUI();
+        refreshPreview();
+      };
+      $("mw-pal").onclick = (e) => {
+        const b = e.target.closest(".sw");
+        if (!b || !mConf) return;
+        mConf.washc = b.dataset.c;
+        mWashUI();
+        refreshPreview();
+      };
+      $("numpal").onclick = (e) => {
+        const b = e.target.closest(".sw");
+        if (!b || !mConf) return;
+        mConf.numcol = b.dataset.c;
+        numColUI();
+        refreshPreview();
+      };
+
+      // --- live preview (true tile size, real data) ---
+      function confSpec() {
+        const s = {
+          type: mConf.style,
+          stops: mConf.stops,
+          bars: mConf.bars,
+          align: mConf.align,
+          mark: mConf.mark,
+          dir: mConf.dir,
+          extra: mConf.extra,
+          fill: mConf.fill,
+          anim: mConf.anim,
+          cvals: mConf.cvals,
+          scale: mConf.scale,
+          smin: mConf.smin,
+          smax: mConf.smax,
+          max: mConf.max,
+          dyn: mConf.dyn,
+          unit: mConf.unit,
+          numcol: mConf.numcol,
+          fx: mConf.fx,
+          user: mConf.user,
+          id: mConf.id,
+          mode: mConf.mode,
+          key: "__pv",
+        };
+        if (pSpec && pSpec.type === s.type) s._casc = pSpec._casc;
+        return s;
+      }
+      function rebuildPvCard() {
+        const sub = mConf.style === "cpu" && CORES.length ? ` · ${CORES.length} CORES` : "";
+        const head = `<div class="lbl"${mConf.title3 === "off" ? ' style="visibility:hidden"' : ""}><span>${mConf.label || "PREVIEW"}${sub}</span><span class="u">${unitLabel(mConf.unit || "")}</span></div>`;
+        const disp = `<div class="disp" style="text-align:${mConf.numalign || (mConf.numpos === "bottom" ? "center" : "right")}${mConf.numon === false ? ";visibility:hidden" : ""}"><span class="ghost" id="pv-g"></span><span class="val" id="pv-v">-</span></div>`;
+        const canv = `<canvas id="pv-c"></canvas>`;
+        const mid = mConf.numpos === "bottom" ? canv + disp : disp + canv;
+        const pvedit = CUSTOM[mConf.style]
+          ? `<div id="pv-edit" title="Edit this custom style in the style creator">✎</div>`
+          : "";
+        $("pvcard").innerHTML =
+          `<div class="wash"></div>` + pvedit + (mConf.title3 === "bottom" ? mid + head : head + mid);
+        if (CUSTOM[mConf.style]) $("pv-edit").onclick = () => seOpen(mConf.style);
+        applyWash($("pvcard"), mConf, true);
+        $("pvcard").classList.toggle("classic", mConf.border === "classic");
+        $("pvcard").classList.toggle("monitor", mConf.border === "mon");
+        $("pvcard").classList.toggle("beige", mConf.border === "mon" && mConf.bordercol === "beige");
+      }
+      function sizePreview() {
+        const pane = $("pvpane"),
+          card = $("pvcard");
+        const cell = Math.max(
+          MINCELL,
+          Math.min(
+            gridState.cell,
+            Math.floor((pane.clientWidth - 20 - 2 * GAP) / 3),
+            Math.floor((pane.clientHeight - 20 - 2 * GAP) / 3),
+          ),
+        );
+        card.style.width = mConf.w * cell + (mConf.w - 1) * GAP + "px";
+        card.style.height = mConf.h * cell + (mConf.h - 1) * GAP + "px";
+      }
+      function refreshPreview() {
+        if (!mConf || !modalOpen()) return;
+        updateMultiBtn();
+        pSpec = confSpec();
+        rebuildPvCard();
+        sizePreview();
+        previewRender();
+      }
+      function previewRender() {
+        if (!modalOpen() || !pSpec) return;
+        const data = PH.length ? PH : [0],
+          val = data[data.length - 1];
+        const acc = accentOf(pSpec, val),
+          str = segStr(val, pSpec.unit || ""),
+          ncol = pSpec.numcol === "acc" ? gridState.accent : pSpec.numcol || acc;
+        const v = $("pv-v");
+        if (!v) return;
+        v.textContent = str;
+        v.style.color = ncol;
+        v.style.textShadow = `0 0 6px ${ncol},0 0 14px ${ncol}`;
+        $("pv-g").textContent = ghostOf(str);
+        $("pvcard").style.setProperty("--accent", acc);
+        const cv = $("pv-c");
+        if (!cv || !cv.clientWidth) return;
+        const [cx, cw, ch2] = setup(cv);
+        let ddata = pSpec.type === "line" && pSpec.anim === "smooth" ? interpData(data, 0) : data;
+        let dval = val;
+        const sv = scaleView(pSpec, data),
+          om = pSpec.max;
+        if (sv) {
+          ddata = ddata.map((x) => x - sv.base);
+          dval = val - sv.base;
+          if (sv.top != null) pSpec.max = sv.top;
+        }
+        pSpec._mx = pSpec.max != null ? pSpec.max : Math.max(...ddata, 1e-6) * 1.1;
+        drawAny(cx, cw, ch2, pSpec, ddata, dval);
+        pSpec.max = om;
+      }
+      function previewTick(m) {
+        if (!modalOpen() || !mConf || !mConf.calcRef) return;
+        let v = null;
+        try {
+          v = mConf.calcRef(m);
+        } catch (e) {}
+        PH.push(v == null || isNaN(v) ? 0 : v);
+        if (PH.length > HISTORY) PH.shift();
+        if (pSpec && pSpec.type === "eq" && (pSpec.extra | 0) > 0)
+          cascadeFeed(pSpec, PH[PH.length - 1], Math.min(2, pSpec.extra | 0), eqCols(pSpec), eqCols(pSpec));
+        previewRender();
+      }
+
+      // --- open / save ---
+      function openModal() {
+        $("modal").style.display = "flex";
+        selStop = 0;
+        $("pvpane").style.height =
+          Math.min(3 * gridState.cell + 2 * GAP + 20, Math.round(window.innerHeight * 0.55)) + "px";
+        renderStyleStrip();
+        buildStyleOpts();
+        stopsUI();
+        setSeg("m-w", mConf.w);
+        setSeg("m-h", mConf.h);
+        setSeg("m-num", mConf.numpos);
+        setSeg("m-mode", mConf.mode || "abs");
+        setSeg("m-scale", mConf.scale || "auto");
+        $("m-smin").value = mConf.smin != null ? mConf.smin : "";
+        $("m-smax").value = mConf.smax != null ? mConf.smax : "";
+        buildChartNav();
+        setSeg("m-nal", mConf.numalign || "right");
+        numColUI();
+        setSeg("m-numon", mConf.numon ? "on" : "off");
+        setSeg("m-titleon", mConf.title3);
+        setSeg("m-border", mConf.border || "def");
+        setSeg("m-bezel", mConf.bordercol || "dark");
+        $("bezelrow").style.visibility = mConf.border === "mon" ? "visible" : "hidden";
+        mFxUI();
+        mWashUI();
+        refreshPreview();
+        // the data-point list runs the full height of the menu
+        const nav = $("chartnav");
+        if (nav.style.display !== "none") {
+          nav.style.maxHeight = "150px";
+          const h = Math.max(
+            document.querySelector("#modal .eleft").offsetHeight,
+            document.querySelector("#modal .eright").offsetHeight,
+          );
+          nav.style.maxHeight = h + "px";
+        }
+      }
+      function fxNorm(o) {
+        if (!o) return o;
+        const r = {};
+        ["g", "n", "f", "t", "c"].forEach((k) => {
+          let v = +o[k] || 0;
+          if (v === 1) v = 55;
+          r[k] = Math.max(0, Math.min(100, v));
+        });
+        ["gs", "ns", "fs", "ts", "cs"].forEach((k) => {
+          r[k] = o[k] == null ? 100 : Math.max(0, Math.min(300, +o[k] || 0));
+        });
+        return r;
+      } // legacy 0/1 flags → intensities; speeds default ×1.0
+      function fxPick(src) {
+        if (src) return fxNorm(src);
+        return fxGlobal();
+      }
+      function openAdd(cell) {
+        editKey = null;
+        multiKeys = null;
+        document.querySelector(".panel.editor").classList.remove("multi");
+        pendingCell = cell || null;
+        mConf = {
+          style: "eq",
+          stops: defStops(),
+          bars: defBars("eq"),
+          align: "center",
+          mark: "bars",
+          dir: "h",
+          extra: 0,
+          fill: true,
+          anim: "step",
+          cvals: true,
+          scale: "auto",
+          smin: null,
+          smax: null,
+          w: 1,
+          h: 1,
+          numpos: "top",
+          numalign: "right",
+          numcol: null,
+          numon: true,
+          title3: "top",
+          border: "off",
+          bordercol: "dark",
+          fx: fxPick(),
+          wash: 0,
+          washc: "acc",
+          user: true,
+          mode: "abs",
+          dim: "*",
+          id: null,
+          unit: "",
+          label: "",
+          dyn: null,
+          max: null,
+          calcRef: null,
+        };
+        $("m-title").textContent = "ADD TILE";
+        $("m-add").textContent = "Add";
+        $("m-del").style.display = "none";
+        $("m-srcsel").style.display = "flex";
+        $("m-srcname").style.display = "none";
+        fillCharts(null);
+        fillDims($("m-chart").value, "*");
+        openModal();
+        srcChanged(false);
+      }
+      function openEdit(key) {
+        const s = cards[key];
+        if (!s) return;
+        editKey = key;
+        multiKeys = null;
+        document.querySelector(".panel.editor").classList.remove("multi");
+        pendingCell = null;
+        mConf = {
+          style: s.type,
+          stops: stopsOf(s).map((x) => ({ p: x.p, c: x.c })),
+          bars: s.bars || defBars(s.type),
+          align: s.align || "center",
+          mark: s.mark || "bars",
+          dir: s.dir || "h",
+          extra: Math.min(2, s.extra | 0),
+          fill: s.fill !== false,
+          anim: s.anim || "step",
+          cvals: s.cvals !== false,
+          scale: s.scale || "auto",
+          smin: s.smin != null ? s.smin : null,
+          smax: s.smax != null ? s.smax : null,
+          w: s.w || 1,
+          h: s.h || 1,
+          numpos: s.numpos || "top",
+          numalign: s.numalign || (s.numpos === "bottom" ? "center" : "right"),
+          numcol: s.numcol || null,
+          numon: s.numon !== false,
+          title3: s.titleon === false ? "off" : s.titlepos || "top",
+          border: s.border === "classic" || s.border === "mon" ? s.border : "off", // legacy "def" → off
+          bordercol: s.bordercol || "dark",
+          fx: fxPick(s.fx),
+          wash: +s.wash || 0,
+          washc: s.washc || "acc",
+          user: !!s.user,
+          mode: s.mode || "abs",
+          dim: s.dim || "*",
+          id: s.id,
+          unit: s.unit,
+          label: s.label,
+          dyn: s.dyn || null,
+          max: s.max != null ? s.max : null,
+          calcRef: s.calc,
+        };
+        $("m-title").textContent = "EDIT TILE";
+        $("m-add").textContent = "Save";
+        $("m-del").style.display = "";
+        if (s.user) {
+          $("m-srcsel").style.display = "flex";
+          $("m-srcname").style.display = "none";
+          fillCharts(s.id);
+          fillDims(s.id, s.dim || "*");
+        } else {
+          $("m-srcsel").style.display = "none";
+          $("m-srcname").style.display = "";
+          $("m-srcname").textContent = s.label + " · BUILT-IN";
+        }
+        PH = (hist[key] || []).slice();
+        openModal();
+      }
+      $("m-close").onclick = closeModal;
+      $("m-cancel").onclick = closeModal;
+      $("modal").onclick = (e) => {
+        if (e.target.id === "modal") closeModal();
+      };
+      $("m-del").onclick = () => {
+        if (editKey) {
+          removeTile(editKey);
+          closeModal();
+        }
+      };
+      function applyConf(s) {
+        s.type = mConf.style;
+        s.stops = mConf.stops.map((x) => ({ p: x.p, c: x.c }));
+        s.cols = undefined;
+        s.bars = mConf.bars;
+        s.align = mConf.align;
+        s.mark = mConf.mark;
+        s.dir = mConf.dir;
+        s.extra = mConf.extra;
+        s.fill = mConf.fill;
+        s.anim = mConf.anim;
+        s.cvals = mConf.cvals !== false;
+        s.scale = mConf.scale || "auto";
+        s.smin = mConf.smin != null && mConf.smin !== "" ? +mConf.smin : undefined;
+        s.smax = mConf.smax != null && mConf.smax !== "" ? +mConf.smax : undefined;
+        s.w = mConf.w;
+        s.h = mConf.h;
+        s.numpos = mConf.numpos;
+        s.numalign = mConf.numalign;
+        s.numcol = mConf.numcol || undefined;
+        s.numon = mConf.numon;
+        s.titleon = mConf.title3 !== "off";
+        s.titlepos = mConf.title3 === "off" ? s.titlepos || "top" : mConf.title3;
+        s.border = mConf.border;
+        s.bordercol = mConf.bordercol || "dark";
+        s.fx = { ...mConf.fx };
+        s.wash = +mConf.wash || 0;
+        s.washc = mConf.washc || "acc";
+        if (s.user) {
+          s.id = mConf.id || s.id;
+          s.dim = mConf.dim || "*";
+          s.mode = mConf.mode || "abs";
+          s.calc = userCalc(s.id, s.dim, s.mode);
+          s.unit = s.mode === "pct" ? "%" : (LASTM[s.id] && LASTM[s.id].units) || "";
+          s.max = s.mode === "pct" ? 100 : null;
+          s.dyn = s.mode === "pct" ? "pct" : undefined;
+          s.label = s.id;
+        }
+      }
+      // multi-edit: apply only the shared subset to every selected tile
+      function openMulti(keys) {
+        const specs = keys.map((k) => cards[k]).filter(Boolean);
+        if (!specs.length) return;
+        if (specs.length === 1) {
+          openEdit(specs[0].key);
+          return;
+        }
+        const s = specs[0];
+        editKey = null;
+        pendingCell = null;
+        multiKeys = specs.map((x) => x.key);
+        mConf = {
+          style: s.type,
+          stops: stopsOf(s).map((x) => ({ p: x.p, c: x.c })),
+          bars: s.bars || defBars(s.type),
+          align: s.align || "center",
+          mark: s.mark || "bars",
+          dir: s.dir || "h",
+          extra: s.extra | 0,
+          fill: s.fill !== false,
+          anim: s.anim || "step",
+          cvals: s.cvals !== false,
+          scale: s.scale || "auto",
+          smin: null,
+          smax: null,
+          w: s.w || 1,
+          h: s.h || 1,
+          numpos: s.numpos || "top",
+          numalign: s.numalign || "right",
+          numcol: s.numcol || null,
+          numon: s.numon !== false,
+          title3: s.titleon === false ? "off" : s.titlepos || "top",
+          border: s.border === "classic" || s.border === "mon" ? s.border : "off",
+          bordercol: s.bordercol || "dark",
+          fx: fxPick(s.fx),
+          wash: +s.wash || 0,
+          washc: s.washc || "acc",
+          user: false,
+          mode: "abs",
+          dim: "*",
+          id: null,
+          unit: "",
+          label: "",
+          dyn: null,
+          max: null,
+          calcRef: null,
+        };
+        multiBase = {
+          stops: JSON.stringify(mConf.stops),
+          numcol: mConf.numcol || null,
+          numpos: mConf.numpos,
+          numon: !!mConf.numon,
+          title3: mConf.title3,
+          border: mConf.border,
+          bordercol: mConf.bordercol,
+          fx: JSON.stringify(mConf.fx),
+          wash: +mConf.wash || 0,
+          washc: mConf.washc || "acc",
+        };
+        $("m-title").textContent = "EDIT " + specs.length + " TILES";
+        $("m-add").textContent = "Apply (0)";
+        $("m-del").style.display = "none";
+        document.querySelector(".panel.editor").classList.add("multi");
+        openModal();
+      }
+      function multiDiff() {
+        if (!multiBase || !mConf) return [];
+        const d = [];
+        if (JSON.stringify(mConf.stops) !== multiBase.stops) d.push("stops");
+        if ((mConf.numcol || null) !== multiBase.numcol) d.push("numcol");
+        if (mConf.numpos !== multiBase.numpos) d.push("numpos");
+        if (!!mConf.numon !== multiBase.numon) d.push("numon");
+        if (mConf.title3 !== multiBase.title3) d.push("title");
+        if (mConf.border !== multiBase.border || mConf.bordercol !== multiBase.bordercol) d.push("border");
+        if (JSON.stringify(mConf.fx) !== multiBase.fx) d.push("fx");
+        if ((+mConf.wash || 0) !== multiBase.wash || (mConf.washc || "acc") !== multiBase.washc) d.push("wash");
+        return d;
+      }
+      function updateMultiBtn() {
+        if (!multiKeys) return;
+        $("m-add").textContent = "Apply (" + multiDiff().length + ")";
+      }
+      function applyMulti() {
+        const d = new Set(multiDiff());
+        if (!d.size) return;
+        multiKeys.forEach((k) => {
+          const s = cards[k];
+          if (!s) return;
+          if (d.has("stops")) {
+            s.stops = mConf.stops.map((x) => ({ p: x.p, c: x.c }));
+            s.cols = undefined;
+          }
+          if (d.has("numcol")) s.numcol = mConf.numcol || undefined;
+          if (d.has("numpos")) s.numpos = mConf.numpos;
+          if (d.has("numon")) s.numon = mConf.numon;
+          if (d.has("title")) {
+            s.titleon = mConf.title3 !== "off";
+            s.titlepos = mConf.title3 === "off" ? s.titlepos || "top" : mConf.title3;
+          }
+          if (d.has("border")) {
+            s.border = mConf.border;
+            s.bordercol = mConf.bordercol || "dark";
+          }
+          if (d.has("fx")) s.fx = { ...mConf.fx };
+          if (d.has("wash")) {
+            s.wash = +mConf.wash || 0;
+            s.washc = mConf.washc || "acc";
+          }
+          rebuildTile(s);
+        });
+        saveLayout();
+        clampGrid();
+        refreshPlaceholders();
+      }
+      $("m-add").onclick = () => {
+        if (multiKeys) {
+          applyMulti();
+          closeModal();
+          return;
+        }
+        if (editKey) {
+          const s = cards[editKey];
+          applyConf(s);
+          rebuildTile(s);
+          saveLayout();
+          clampGrid();
+          refreshPlaceholders();
+          closeModal();
+          return;
+        }
+        if (!mConf.id) return;
+        const s = makeUserSpec(mConf.id, mConf.style, mConf.w, mConf.h, mConf.numpos, null, mConf.dim, mConf.mode);
+        applyConf(s);
+        if (pendingCell) {
+          s.col = pendingCell.col;
+          s.row = pendingCell.row;
+        }
+        addTile(s);
+        saveLayout();
+        clampGrid();
+        refreshPlaceholders();
+        closeModal();
+      };
+
+      // ---------- custom style creator ----------
+      const SEGRID = 24;
+      const SE = {
+        shapes: [],
+        sel: -1,
+        fillDir: "v",
+        rot: 0,
+        gw: 0,
+        gh: 0,
+        snap: true,
+        editing: null,
+        drag: null,
+        rubber: null,
+        nx: SEGRID,
+        ny: SEGRID,
+        tw: 1,
+        th: 1,
+        sx: 1,
+        sy: 1,
+      }; // sx/sy: aspect scale so presets stay square/circular; gw/gh: mask cell size
+      let seTimer = null,
+        seT = 0;
+      function seNorm(e) {
+        const r = $("se-cv").getBoundingClientRect();
+        return [
+          Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)),
+          Math.max(0, Math.min(1, (e.clientY - r.top) / r.height)),
+        ];
+      }
+      function seSnap(v, ax) {
+        const n = ax ? SE.ny : SE.nx;
+        return SE.snap ? Math.round(v * n) / n : v;
+      }
+      function inPoly(pt, pts) {
+        let ins = false;
+        for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+          const xi = pts[i][0],
+            yi = pts[i][1],
+            xj = pts[j][0],
+            yj = pts[j][1];
+          if (yi > pt[1] !== yj > pt[1] && pt[0] < ((xj - xi) * (pt[1] - yi)) / (yj - yi) + xi) ins = !ins;
+        }
+        return ins;
+      }
+      function seDraw() {
+        const cv = $("se-cv");
+        if (!cv.clientWidth) return;
+        const [ctx, w, h] = setup(cv);
+        ctx.clearRect(0, 0, w, h);
+        ctx.strokeStyle = "rgba(90,140,90,.14)";
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= SE.nx; i++) {
+          const t = i / SE.nx;
+          ctx.beginPath();
+          ctx.moveTo(t * w, 0);
+          ctx.lineTo(t * w, h);
+          ctx.stroke();
+        }
+        for (let i = 0; i <= SE.ny; i++) {
+          const t = i / SE.ny;
+          ctx.beginPath();
+          ctx.moveTo(0, t * h);
+          ctx.lineTo(w, t * h);
+          ctx.stroke();
+        }
+        SE.shapes.forEach((sh, i) => {
+          ctx.beginPath();
+          sh.pts.forEach((p, j) => {
+            const X = p[0] * w,
+              Y = p[1] * h;
+            j ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y);
+          });
+          ctx.closePath();
+          ctx.fillStyle = i === SE.sel ? "rgba(77,255,90,.32)" : "rgba(160,190,160,.16)";
+          ctx.fill();
+          ctx.strokeStyle = i === SE.sel ? C.green : "#5a7a5a";
+          ctx.lineWidth = 1.5 * dpr;
+          ctx.stroke();
+          if (sh.band != null) {
+            const cx2 = sh.pts.reduce((a, p) => a + p[0], 0) / sh.pts.length,
+              cy2 = sh.pts.reduce((a, p) => a + p[1], 0) / sh.pts.length;
+            const bc = mConf && mConf.stops[sh.band] ? mConf.stops[sh.band].c : "#9fb0a0";
+            ctx.font = `bold ${Math.round(13 * dpr)}px "Courier New",monospace`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = bc;
+            ctx.shadowColor = bc;
+            ctx.shadowBlur = 5 * dpr;
+            ctx.fillText(String(sh.band + 1), cx2 * w, cy2 * h);
+            ctx.shadowBlur = 0;
+          }
+          if (i === SE.sel) {
+            ctx.fillStyle = "#fff";
+            (sh.kind ? kindCorners(sh) : sh.pts).forEach((p) =>
+              ctx.fillRect(p[0] * w - 3.5 * dpr, p[1] * h - 3.5 * dpr, 7 * dpr, 7 * dpr),
+            );
+          }
+        });
+        if (SE.rubber) {
+          const r = SE.rubber;
+          ctx.strokeStyle = C.amber;
+          ctx.setLineDash([5 * dpr, 4 * dpr]);
+          ctx.strokeRect(
+            Math.min(r.x0, r.x1) * w,
+            Math.min(r.y0, r.y1) * h,
+            Math.abs(r.x1 - r.x0) * w,
+            Math.abs(r.y1 - r.y0) * h,
+          );
+          ctx.setLineDash([]);
+        }
+        seSyncShapeOpts();
+      }
+      function seSyncShapeOpts() {
+        const on = SE.sel >= 0;
+        $("se-shopts").style.visibility = on ? "visible" : "hidden";
+        if (!on) return;
+        const sh = SE.shapes[SE.sel];
+        setSeg("se-band", sh.band == null ? -1 : sh.band);
+        const fd = sh.fd || "g",
+          base = fd[0],
+          vr = +(fd[1] || 1);
+        [...$("se-fd").children].forEach((b) => {
+          const onb = b.dataset.v === base;
+          b.classList.toggle("on", onb);
+          b.classList.remove("m2", "m3");
+          if (onb && vr === 2) b.classList.add("m2");
+          if (onb && vr === 3) b.classList.add("m3");
+        });
+        const isC = base === "c";
+        $("se-copt").style.visibility = isC ? "visible" : "hidden";
+        if (isC) {
+          $("se-cpiv").value = sh.cpiv || "c";
+          $("se-cmode").value = sh.cmode || "cw";
+        }
+      }
+      function sePrevDraw() {
+        const cv = $("se-pv");
+        if (!cv || !cv.clientWidth) return;
+        const [ctx, w, h] = setup(cv);
+        ctx.clearRect(0, 0, w, h);
+        const s = { stops: (mConf && mConf.stops) || defStops(), max: 100, _mx: 100 };
+        drawCustomDef(
+          ctx,
+          w,
+          h,
+          { shapes: SE.shapes, fillDir: SE.fillDir, rot: SE.rot, gw: SE.gw, gh: SE.gh, asp: SE.tw / SE.th },
+          s,
+          50 + 48 * Math.sin(seT),
+        );
+      }
+      function seHitNode(pt) {
+        const order =
+          SE.sel >= 0
+            ? [SE.sel, ...SE.shapes.map((_, i) => i).filter((i) => i !== SE.sel)]
+            : SE.shapes.map((_, i) => i);
+        for (const i of order) {
+          const sh = SE.shapes[i];
+          const nodes = sh.kind ? kindCorners(sh) : sh.pts;
+          for (let j = 0; j < nodes.length; j++) {
+            const p = nodes[j];
+            if (Math.hypot(p[0] - pt[0], p[1] - pt[1]) < 0.035) return { i, j };
+          }
+        }
+        return null;
+      }
+      $("se-cv").addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        $("se-cv").setPointerCapture(e.pointerId);
+        const pt = seNorm(e),
+          hit = seHitNode(pt);
+        if (hit) {
+          SE.sel = hit.i;
+          SE.drag = SE.shapes[hit.i].kind ? { t: "size" } : { t: "node", j: hit.j };
+          seDraw();
+          return;
+        }
+        for (let i = SE.shapes.length - 1; i >= 0; i--) {
+          if (inPoly(pt, SE.shapes[i].pts)) {
+            SE.sel = i;
+            SE.drag = {
+              t: "move",
+              start: pt,
+              orig: SE.shapes[i].pts.map((p) => p.slice()),
+              oax: SE.shapes[i].ax,
+              oay: SE.shapes[i].ay,
+            };
+            seDraw();
+            return;
+          }
+        }
+        SE.sel = -1;
+        SE.drag = { t: "new" };
+        SE.rubber = { x0: pt[0], y0: pt[1], x1: pt[0], y1: pt[1] };
+        seDraw();
+      });
+      $("se-cv").addEventListener("pointermove", (e) => {
+        if (!SE.drag) return;
+        const pt = seNorm(e);
+        if (SE.drag.t === "node") {
+          SE.shapes[SE.sel].pts[SE.drag.j] = [seSnap(pt[0], 0), seSnap(pt[1], 1)];
+        } else if (SE.drag.t === "size") {
+          const sh = SE.shapes[SE.sel],
+            o = sh.orient || 0,
+            full = sh.kind === "fcir" || sh.kind === "fdnt";
+          let r = Math.max(Math.abs(pt[0] - sh.ax) / SE.sx, Math.abs(pt[1] - sh.ay) / SE.sy);
+          r = seSnap(r * SE.sx, 0) / SE.sx;
+          if (full) {
+            // full shapes resize from their centre, so the radius is capped by the nearest edge
+            r = Math.min(r, sh.ax / SE.sx, (1 - sh.ax) / SE.sx, sh.ay / SE.sy, (1 - sh.ay) / SE.sy);
+          } else {
+            const dx = o === 0 || o === 1 ? 1 : -1,
+              dy = o === 1 || o === 2 ? 1 : -1;
+            r = Math.min(r, (dx > 0 ? 1 - sh.ax : sh.ax) / SE.sx, (dy > 0 ? 1 - sh.ay : sh.ay) / SE.sy);
+          }
+          r = Math.max(2 / SEGRID, r);
+          sh.r = r;
+          sh.pts = shapePts(sh);
+        } else if (SE.drag.t === "move") {
+          const o = SE.drag.orig,
+            sh = SE.shapes[SE.sel];
+          let dx = pt[0] - SE.drag.start[0],
+            dy = pt[1] - SE.drag.start[1];
+          const xsO = o.map((p) => p[0]),
+            ysO = o.map((p) => p[1]);
+          dx = Math.max(-Math.min(...xsO), Math.min(1 - Math.max(...xsO), dx));
+          dy = Math.max(-Math.min(...ysO), Math.min(1 - Math.max(...ysO), dy));
+          const sdx = seSnap(o[0][0] + dx, 0) - o[0][0],
+            sdy = seSnap(o[0][1] + dy, 1) - o[0][1];
+          sh.pts = o.map((p) => [p[0] + sdx, p[1] + sdy]);
+          if (sh.kind) {
+            sh.ax = SE.drag.oax + sdx;
+            sh.ay = SE.drag.oay + sdy;
+          }
+        } else if (SE.drag.t === "new") {
+          SE.rubber.x1 = pt[0];
+          SE.rubber.y1 = pt[1];
+        }
+        seDraw();
+        sePrevDraw();
+      });
+      const seUp = () => {
+        if (!SE.drag) return;
+        if (SE.drag.t === "new" && SE.rubber) {
+          const r = SE.rubber;
+          const x0 = seSnap(Math.min(r.x0, r.x1), 0),
+            x1 = seSnap(Math.max(r.x0, r.x1), 0);
+          const y0 = seSnap(Math.min(r.y0, r.y1), 1),
+            y1 = seSnap(Math.max(r.y0, r.y1), 1);
+          if (x1 - x0 >= 1 / SE.nx - 1e-6 && y1 - y0 >= 1 / SE.ny - 1e-6) {
+            SE.shapes.push({
+              pts: [
+                [x0, y0],
+                [x1, y0],
+                [x1, y1],
+                [x0, y1],
+              ],
+            });
+            SE.sel = SE.shapes.length - 1;
+          }
+        }
+        SE.drag = null;
+        SE.rubber = null;
+        seDraw();
+        sePrevDraw();
+      };
+      $("se-cv").addEventListener("pointerup", seUp);
+      $("se-cv").addEventListener("pointercancel", seUp);
+      $("se-cv").addEventListener("dblclick", (e) => {
+        const pt = seNorm(e),
+          hit = seHitNode(pt);
+        if (hit) {
+          const sh = SE.shapes[hit.i];
+          if (sh.kind) return;
+          if (sh.pts.length > 3) {
+            sh.pts.splice(hit.j, 1);
+            SE.sel = hit.i;
+            seDraw();
+            sePrevDraw();
+          }
+          return;
+        }
+        if (SE.sel < 0) return;
+        const sh = SE.shapes[SE.sel];
+        if (sh.kind) return;
+        let best = null;
+        for (let j = 0; j < sh.pts.length; j++) {
+          const a = sh.pts[j],
+            b = sh.pts[(j + 1) % sh.pts.length];
+          const abx = b[0] - a[0],
+            aby = b[1] - a[1],
+            L2 = abx * abx + aby * aby || 1e-9;
+          let t = ((pt[0] - a[0]) * abx + (pt[1] - a[1]) * aby) / L2;
+          t = Math.max(0, Math.min(1, t));
+          const px = a[0] + t * abx,
+            py = a[1] + t * aby,
+            d = Math.hypot(pt[0] - px, pt[1] - py);
+          if (d < 0.035 && (!best || d < best.d)) best = { j, d, p: [seSnap(px, 0), seSnap(py, 1)] };
+        }
+        if (best) {
+          sh.pts.splice(best.j + 1, 0, best.p);
+          seDraw();
+          sePrevDraw();
+        }
+      });
+      $("se-dir").onclick = (e) => {
+        const b = e.target.closest("button");
+        if (!b) return;
+        SE.fillDir = b.dataset.v;
+        setSeg("se-dir", SE.fillDir);
+        sePrevDraw();
+      };
+      $("se-snap").onclick = () => {
+        SE.snap = !SE.snap;
+        $("se-snap").classList.toggle("on", SE.snap);
+      };
+      $("se-delshape").onclick = () => {
+        if (SE.sel >= 0) {
+          SE.shapes.splice(SE.sel, 1);
+          SE.sel = -1;
+          seDraw();
+          sePrevDraw();
+        }
+      };
+      $("se-clear").onclick = () => {
+        SE.shapes = [];
+        SE.sel = -1;
+        seDraw();
+        sePrevDraw();
+      };
+      // preset shapes - placed with the currently selected colour node as band number
+      function quarterPts(kind, ax, ay, r, orient) {
+        const a0 = -Math.PI / 2 + (orient || 0) * (Math.PI / 2),
+          rx = r * SE.sx,
+          ry = r * SE.sy,
+          outer = [];
+        for (let i = 0; i <= 8; i++) {
+          const a = a0 + ((Math.PI / 2) * i) / 8;
+          outer.push([ax + rx * Math.cos(a), ay + ry * Math.sin(a)]);
+        }
+        if (kind === "pie") return [[ax, ay], ...outer];
+        const inner = [];
+        for (let i = 8; i >= 0; i--) {
+          const a = a0 + ((Math.PI / 2) * i) / 8;
+          inner.push([ax + (rx / 2) * Math.cos(a), ay + (ry / 2) * Math.sin(a)]);
+        }
+        return [...outer, ...inner];
+      }
+      function fullPts(kind, ax, ay, r) {
+        const rx = r * SE.sx,
+          ry = r * SE.sy,
+          outer = [],
+          N = 24;
+        for (let i = 0; i < N; i++) {
+          const a = (2 * Math.PI * i) / N;
+          outer.push([ax + rx * Math.cos(a), ay + ry * Math.sin(a)]);
+        }
+        if (kind === "fcir") return outer;
+        // ring: outer loop closed at 360, inner loop traced backwards, joined by a zero-width radial seam at angle 0
+        const pts = [...outer, [ax + rx, ay]];
+        for (let i = N; i >= 0; i--) {
+          const a = (2 * Math.PI * i) / N;
+          pts.push([ax + (rx / 2) * Math.cos(a), ay + (ry / 2) * Math.sin(a)]);
+        }
+        return pts;
+      }
+      function shapePts(sh) {
+        return sh.kind === "fcir" || sh.kind === "fdnt"
+          ? fullPts(sh.kind, sh.ax, sh.ay, sh.r)
+          : quarterPts(sh.kind, sh.ax, sh.ay, sh.r, sh.orient || 0);
+      }
+      function kindCorners(sh) {
+        if (sh.kind === "fcir" || sh.kind === "fdnt") {
+          const rx = sh.r * SE.sx,
+            ry = sh.r * SE.sy;
+          return [
+            [sh.ax - rx, sh.ay - ry],
+            [sh.ax + rx, sh.ay - ry],
+            [sh.ax - rx, sh.ay + ry],
+            [sh.ax + rx, sh.ay + ry],
+          ];
+        }
+        const o = sh.orient || 0;
+        const dx = (o === 0 || o === 1 ? 1 : -1) * sh.r * SE.sx,
+          dy = (o === 1 || o === 2 ? 1 : -1) * sh.r * SE.sy;
+        return [
+          [sh.ax, sh.ay],
+          [sh.ax + dx, sh.ay],
+          [sh.ax, sh.ay + dy],
+          [sh.ax + dx, sh.ay + dy],
+        ];
+      }
+      function placePreset(kind) {
+        const off = ((SE.shapes.length % 5) * 2) / SEGRID,
+          offx = off * SE.sx,
+          offy = off * SE.sy;
+        if (kind === "fcir" || kind === "fdnt") {
+          const r = 0.25,
+            rx = r * SE.sx,
+            ry = r * SE.sy;
+          const ax = Math.max(rx, Math.min(1 - rx, 0.5 + offx)),
+            ay = Math.max(ry, Math.min(1 - ry, 0.5 + offy));
+          SE.shapes.push({ pts: fullPts(kind, ax, ay, r), band: selStop, kind, ax, ay, r, orient: 0 });
+        } else if (kind === "pie" || kind === "dnt") {
+          const r = 0.25,
+            rx = r * SE.sx,
+            ry = r * SE.sy;
+          const ax = Math.min(1 - rx, 0.5 - rx / 2 + offx),
+            ay = Math.max(ry, Math.min(1, 0.5 + ry / 2 + offy));
+          SE.shapes.push({ pts: quarterPts(kind, ax, ay, r, 0), band: selStop, kind, ax, ay, r, orient: 0 });
+        } else {
+          const dx = 0.25 * SE.sx,
+            dy = 0.25 * SE.sy;
+          const x0 = Math.min(1 - dx, 0.5 - dx / 2 + offx),
+            y0 = Math.min(1 - dy, 0.5 - dy / 2 + offy);
+          SE.shapes.push({
+            pts: [
+              [x0, y0],
+              [x0 + dx, y0],
+              [x0 + dx, y0 + dy],
+              [x0, y0 + dy],
+            ],
+            band: selStop,
+          });
+        }
+        SE.sel = SE.shapes.length - 1;
+        seDraw();
+        sePrevDraw();
+      }
+      $("shp-sq").onclick = () => placePreset("sq");
+      $("shp-pie").onclick = () => placePreset("pie");
+      $("shp-dnt").onclick = () => placePreset("dnt");
+      $("shp-fcir").onclick = () => placePreset("fcir");
+      $("shp-fdnt").onclick = () => placePreset("fdnt");
+      $("se-band").onclick = (e) => {
+        const b = e.target.closest("button");
+        if (!b || SE.sel < 0) return;
+        const v = +b.dataset.v;
+        SE.shapes[SE.sel].band = v < 0 ? undefined : v;
+        setSeg("se-band", v);
+        seDraw();
+        sePrevDraw();
+      };
+      const FDMODES = { g: 1, h: 2, v: 2, d: 3, c: 1, i: 1 }; // click active button again → next mode (green/amber/red); circle uses dropdowns
+      $("se-fd").onclick = (e) => {
+        const b = e.target.closest("button");
+        if (!b || SE.sel < 0) return;
+        const sh = SE.shapes[SE.sel],
+          nb = b.dataset.v;
+        const cur = sh.fd || "g",
+          curBase = cur[0],
+          curVar = +(cur[1] || 1);
+        const nv = curBase === nb ? (curVar % FDMODES[nb]) + 1 : 1;
+        sh.fd = nb === "g" ? undefined : nb + (nv > 1 ? nv : "");
+        seDraw();
+        sePrevDraw();
+      };
+      $("se-srot").onclick = (e) => {
+        const b = e.target.closest("button");
+        if (!b || SE.sel < 0) return;
+        const sh = SE.shapes[SE.sel],
+          cw = b.dataset.v === "cw";
+        if (sh.kind === "fcir" || sh.kind === "fdnt") return; // full shapes are rotation-invariant
+        if (sh.kind) {
+          const o = sh.orient || 0,
+            no = (o + (cw ? 1 : 3)) % 4;
+          const rx = sh.r * SE.sx,
+            ry = sh.r * SE.sy;
+          const dx = o === 0 || o === 1 ? 1 : -1,
+            dy = o === 1 || o === 2 ? 1 : -1;
+          const x0 = Math.min(sh.ax, sh.ax + dx * rx),
+            y0 = Math.min(sh.ay, sh.ay + dy * ry),
+            x1 = x0 + rx,
+            y1 = y0 + ry;
+          sh.orient = no;
+          if (no === 0) {
+            sh.ax = x0;
+            sh.ay = y1;
+          } else if (no === 1) {
+            sh.ax = x0;
+            sh.ay = y0;
+          } else if (no === 2) {
+            sh.ax = x1;
+            sh.ay = y0;
+          } else {
+            sh.ax = x1;
+            sh.ay = y1;
+          }
+          sh.pts = quarterPts(sh.kind, sh.ax, sh.ay, sh.r, no);
+        } else {
+          // rotate in pixel space (aspect-corrected) so non-square canvases don't skew
+          const xs = sh.pts.map((p) => p[0]),
+            ys = sh.pts.map((p) => p[1]);
+          const cx = (Math.min(...xs) + Math.max(...xs)) / 2,
+            cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+          sh.pts = sh.pts.map(([x, y]) => {
+            const u = (x - cx) * SE.tw,
+              v = (y - cy) * SE.th;
+            const p = cw ? [cx - v / SE.tw, cy + u / SE.th] : [cx + v / SE.tw, cy - u / SE.th];
+            return [Math.max(0, Math.min(1, p[0])), Math.max(0, Math.min(1, p[1]))];
+          });
+        }
+        seDraw();
+        sePrevDraw();
+      };
+      $("se-cpiv").onchange = (e) => {
+        if (SE.sel < 0) return;
+        SE.shapes[SE.sel].cpiv = e.target.value;
+        sePrevDraw();
+      };
+      $("se-cmode").onchange = (e) => {
+        if (SE.sel < 0) return;
+        SE.shapes[SE.sel].cmode = e.target.value;
+        sePrevDraw();
+      };
+      $("se-mbars").oninput = (e) => {
+        SE.gw = +e.target.value;
+        $("se-mbv").textContent = SE.gw ? SE.gw + " cells" : "OFF";
+        sePrevDraw();
+      };
+      $("se-msegs").oninput = (e) => {
+        SE.gh = +e.target.value;
+        $("se-msv").textContent = SE.gh ? SE.gh + " cells" : "OFF";
+        sePrevDraw();
+      };
+      function seOpen(id) {
+        SE.editing = id || null;
+        SE.sel = -1;
+        SE.rubber = null;
+        SE.drag = null;
+        if (id && CUSTOM[id]) {
+          const d = CUSTOM[id];
+          SE.shapes = d.shapes.map((sh) => ({
+            pts: sh.pts.map((p) => p.slice()),
+            band: sh.band,
+            fd: sh.fd,
+            kind: sh.kind,
+            ax: sh.ax,
+            ay: sh.ay,
+            r: sh.r,
+            orient: sh.orient,
+            cpiv: sh.cpiv,
+            cmode: sh.cmode,
+          }));
+          SE.fillDir = d.fillDir || "v";
+          SE.rot = d.rot || 0;
+          SE.gw = d.gw || 0;
+          SE.gh = d.gh || 0;
+          $("se-name").value = d.name || id;
+        } else {
+          SE.shapes = [];
+          SE.fillDir = "v";
+          SE.rot = 0;
+          SE.gw = 0;
+          SE.gh = 0;
+          $("se-name").value = "";
+        }
+        setSeg("se-dir", SE.fillDir);
+        $("se-mbars").value = SE.gw;
+        $("se-mbv").textContent = SE.gw ? SE.gw + " cells" : "OFF";
+        $("se-msegs").value = SE.gh;
+        $("se-msv").textContent = SE.gh ? SE.gh + " cells" : "OFF";
+        $("se-snap").classList.toggle("on", SE.snap);
+        $("se-delstyle").style.display = SE.editing ? "" : "none";
+        // canvas + live preview mirror the design proportions; grid cells stay square.
+        // editing an existing style reopens at ITS saved aspect, new styles use the tile's W×H
+        let tw = (mConf && mConf.w) || 1,
+          th = (mConf && mConf.h) || 1;
+        if (id && CUSTOM[id] && CUSTOM[id].asp) {
+          const a = CUSTOM[id].asp;
+          if (a >= 1) {
+            tw = a;
+            th = 1;
+          } else {
+            tw = 1;
+            th = 1 / a;
+          }
+        }
+        const BOX = Math.max(480, Math.min(840, window.innerWidth - 450, Math.round(window.innerHeight * 0.74)));
+        const U = BOX / Math.max(tw, th),
+          cvW = Math.round(U * tw),
+          cvH = Math.round(U * th);
+        $("se-cv").style.width = cvW + "px";
+        $("se-cv").style.height = cvH + "px";
+        if (tw >= th) {
+          SE.nx = SEGRID;
+          SE.ny = Math.max(4, Math.round((SEGRID * th) / tw));
+        } else {
+          SE.ny = SEGRID;
+          SE.nx = Math.max(4, Math.round((SEGRID * tw) / th));
+        }
+        SE.tw = tw;
+        SE.th = th;
+        const mn = Math.min(tw, th);
+        SE.sx = mn / tw;
+        SE.sy = mn / th;
+        let pw = 250,
+          ph = Math.round((250 * th) / tw);
+        if (ph > 140) {
+          ph = 140;
+          pw = Math.round((140 * tw) / th);
+        }
+        $("se-pv").style.width = pw + "px";
+        $("se-pv").style.height = ph + "px";
+        $("smodal").style.display = "flex";
+        seDraw();
+        seT = 0;
+        if (seTimer) clearInterval(seTimer);
+        seTimer = setInterval(() => {
+          seT += 0.07;
+          sePrevDraw();
+        }, 100);
+      }
+      function seClose() {
+        $("smodal").style.display = "none";
+        if (seTimer) {
+          clearInterval(seTimer);
+          seTimer = null;
+        }
+      }
+      $("se-x").onclick = seClose;
+      $("se-cancel").onclick = seClose;
+      $("smodal").onclick = (e) => {
+        if (e.target.id === "smodal") seClose();
+      };
+      $("se-save").onclick = () => {
+        if (!SE.shapes.length) return;
+        let id = SE.editing;
+        if (!id) {
+          let n = 1;
+          while (CUSTOM["cs" + n]) n++;
+          id = "cs" + n;
+        }
+        CUSTOM[id] = {
+          name: $("se-name").value.trim() || "CUSTOM " + id.replace("cs", ""),
+          shapes: SE.shapes.map((sh) => ({
+            pts: sh.pts.map((p) => p.slice()),
+            band: sh.band,
+            fd: sh.fd,
+            kind: sh.kind,
+            ax: sh.ax,
+            ay: sh.ay,
+            r: sh.r,
+            orient: sh.orient,
+            cpiv: sh.cpiv,
+            cmode: sh.cmode,
+          })),
+          fillDir: SE.fillDir,
+          rot: SE.rot,
+          gw: SE.gw,
+          gh: SE.gh,
+          asp: SE.tw / SE.th,
+        };
+        saveStyles();
+        if (mConf) {
+          mConf.style = id;
+          renderStyleStrip();
+          buildStyleOpts();
+          refreshPreview();
+        }
+        seClose();
+      };
+      $("se-delstyle").onclick = () => {
+        if (SE.editing) $("cmodal").style.display = "flex";
+      };
+      $("cm-no").onclick = () => ($("cmodal").style.display = "none");
+      $("cmodal").onclick = (e) => {
+        if (e.target.id === "cmodal") $("cmodal").style.display = "none";
+      };
+      $("cm-yes").onclick = () => {
+        $("cmodal").style.display = "none";
+        const id = SE.editing;
+        if (!id) return;
+        delete CUSTOM[id];
+        saveStyles();
+        SPECS.forEach((s) => {
+          if (s.type === id) s.type = "eq";
+        });
+        saveLayout();
+        if (mConf) {
+          if (mConf.style === id) {
+            mConf.style = "eq";
+            mConf.bars = defBars("eq");
+          }
+          renderStyleStrip();
+          buildStyleOpts();
+          refreshPreview();
+        }
+        seClose();
+      };
+
+      // ---------- edit mode + sliders ----------
+      function toggleEdit() {
+        editMode = !editMode;
+        document.body.classList.toggle("edit", editMode);
+        $("editbtn").classList.toggle("on", editMode);
+        $("ctrls").classList.toggle("on", editMode);
+        grid.querySelectorAll(".card").forEach((c) => (c.draggable = editMode));
+        grid.querySelectorAll(".demo").forEach((d) => d.classList.remove("demo"));
+        refreshPlaceholders();
+        if (editMode) {
+          // hint: auto-show the hover affordances on the first tile (or highlight the first empty cell)
+          const first = grid.querySelector(".card") || grid.querySelector(".addcard");
+          if (first) {
+            first.classList.add("demo");
+            if (first.classList.contains("card")) posOverlays(first);
+          }
+        }
+      }
+      $("editbtn").onclick = toggleEdit;
+      $("h1t").onclick = toggleEdit;
+      $("setbtn").onclick = setOpen;
+      function colFits(c) {
+        return c * gridState.cell + (c - 1) * GAP <= availW() + 1;
+      }
+      function rowFits(r) {
+        return r * gridState.cell + (r - 1) * GAP <= availH() + 1;
+      }
+      function blink(id) {
+        const lab = $(id).closest("label");
+        lab.classList.remove("blink");
+        void lab.offsetWidth;
+        lab.classList.add("blink");
+      }
+      $("sc-scale").oninput = (e) => {
+        gridState.cell = gridState.cellWant = +e.target.value;
+        applyGrid();
+        clampGrid();
+        saveGrid();
+        renderAll();
+      };
+      $("sc-cols").oninput = (e) => {
+        const v = +e.target.value;
+        if (v > gridState.cols && !colFits(v)) {
+          e.target.value = gridState.cols;
+          blink("sc-scale");
+          return;
+        }
+        gridState.cols = gridState.colsWant = v;
+        clampGrid();
+        clampTiles();
+        applyGrid();
+        refreshPlaceholders();
+        saveGrid();
+        renderAll();
+      };
+      $("sc-rows").oninput = (e) => {
+        const v = +e.target.value;
+        if (v > gridState.rows && !rowFits(v)) {
+          e.target.value = gridState.rows;
+          blink("sc-scale");
+          return;
+        }
+        gridState.rows = gridState.rowsWant = v;
+        clampGrid();
+        clampTiles();
+        applyGrid();
+        refreshPlaceholders();
+        saveGrid();
+        renderAll();
+      };
+      function renderAll() {
+        for (const sp of SPECS) if (cards[sp.key] && hist[sp.key] && hist[sp.key].length) render(sp, false);
+      }
+      window.addEventListener("resize", () => {
+        clampGrid();
+        clampTiles();
+        applyGrid();
+        if (editMode) refreshPlaceholders();
+        renderAll();
+      });
+      function cycleAlign(axis) {
+        const seq = ["start", "center", "end"];
+        if (axis === "h") gridState.alignH = seq[(seq.indexOf(gridState.alignH || "start") + 1) % 3];
+        else gridState.alignV = seq[(seq.indexOf(gridState.alignV || "start") + 1) % 3];
+        applyGrid();
+        saveGrid();
+      }
+      $("alignh").onclick = () => cycleAlign("h");
+      $("alignv").onclick = () => cycleAlign("v");
+      // ---- test fill: prioritised charts, varied styles/sizes ----
+      function chartScore(k) {
+        if (/^netfilter\.conntrack_sockets/.test(k)) return 100;
+        if (/^net\./.test(k)) return 92;
+        if (/^system\./.test(k)) return 88;
+        if (/^disk_space\.|^mem\./.test(k)) return 82;
+        if (/^ipv4\.sockstat/.test(k)) return 76;
+        if (/^net_drops\.|^net_packets\./.test(k)) return 70;
+        if (/^netfilter\./.test(k)) return 66;
+        if (/^cpu\./.test(k)) return 58;
+        if (/^disk/.test(k)) return 48;
+        if (/^ipv6\./.test(k)) return 26;
+        if (/^netdata\./.test(k)) return 8;
+        return 40;
+      }
+      function randFx() {
+        const R = (a, b) => Math.round((a + Math.random() * (b - a)) / 5) * 5,
+          maybe = (p) => Math.random() < p;
+        return {
+          g: maybe(0.8) ? R(30, 85) : 0,
+          gs: R(40, 200),
+          n: maybe(0.6) ? R(10, 60) : 0,
+          ns: R(40, 250),
+          f: maybe(0.25) ? R(10, 45) : 0,
+          fs: R(40, 250),
+          t: maybe(0.5) ? R(25, 80) : 0,
+          ts: R(50, 200),
+          c: maybe(0.7) ? R(30, 90) : 0,
+          cs: R(0, 150),
+        };
+      }
+      function fillGrid() {
+        const used = new Set(SPECS.filter((s) => cards[s.key]).map((s) => s.id));
+        const cands = Object.keys(LASTM)
+          .filter((k) => !used.has(k))
+          .sort((a, b) => chartScore(b) - chartScore(a) || a.localeCompare(b));
+        const styles = ["eq", "line", "bar", "seg", "memv"];
+        let i = 0;
+        for (const k of cands) {
+          let w = i < 2 ? 2 : i < 6 ? 2 : 1,
+            h = i < 2 ? 2 : i < 6 ? 1 : i < 10 ? 2 : 1;
+          let spot = findSpot(w, h);
+          if (!spot) {
+            w = 1;
+            h = 1;
+            spot = findSpot(1, 1);
+          }
+          if (!spot) break;
+          let dim = "*",
+            mode = "abs";
+          if (/^disk_space\./.test(k)) {
+            dim = "used";
+            mode = "pct";
+          }
+          const st = styles[i % styles.length];
+          const s = makeUserSpec(k, st, w, h, i % 3 === 0 ? "bottom" : "top", null, dim, mode);
+          s.bars = defBars(st);
+          s.col = spot.col;
+          s.row = spot.row;
+          s.fx = randFx(); // every test tile gets its own CRT character
+          addTile(s);
+          i++;
+        }
+        gridState.fx.mode = "i";
+        applyFx();
+        saveGrid(); // switch to INDIV so the per-tile FX actually show
+        saveLayout();
+        clampGrid();
+        refreshPlaceholders();
+      }
+      function clearUser() {
+        SPECS.filter((s) => s.user && cards[s.key])
+          .map((s) => s.key)
+          .forEach(removeTile);
+      }
+      $("fillbtn").onclick = fillGrid;
+      $("clrbtn").onclick = clearUser;
+      function shade(hex, f) {
+        // f>0 → toward white, f<0 → toward black
+        const n = parseInt(hex.slice(1), 16),
+          r = (n >> 16) & 255,
+          g = (n >> 8) & 255,
+          b = n & 255;
+        const m = (v) => Math.max(0, Math.min(255, Math.round(f < 0 ? v * (1 + f) : v + (255 - v) * f)));
+        return `rgb(${m(r)},${m(g)},${m(b)})`;
+      }
+      function applyAccent() {
+        const a = gridState.accent,
+          rt = document.documentElement.style;
+        C.green = a;
+        rt.setProperty("--green", a);
+        rt.setProperty("--acc", a); // header main
+        rt.setProperty("--accbri", shade(a, 0.4)); // active / highlighted
+        rt.setProperty("--accdim", shade(a, -0.45)); // labels / secondary
+        rt.setProperty("--accfaint", shade(a, -0.78)); // borders
+      }
+      function setAccent(hex) {
+        gridState.accent = hex;
+        applyAccent();
+        saveGrid();
+        [...$("swatches").children].forEach((x) => x.classList.toggle("on", x.dataset.c === hex));
+      }
+      $("swatches").onclick = (e) => {
+        const b = e.target.closest(".sw");
+        if (b) setAccent(b.dataset.c);
+      };
+
+      // ---------- marquee multi-select (drag over empty space across tiles) ----------
+      let marq = null,
+        marqHit = false,
+        suppressClick = false;
+      grid.addEventListener("pointerdown", (e) => {
+        if (!editMode || e.button !== 0) return;
+        if (e.target.closest(".card")) return; // dragging a card moves it
+        marq = { x0: e.clientX, y0: e.clientY };
+        marqHit = false;
+      });
+      window.addEventListener("pointermove", (e) => {
+        if (!marq) return;
+        const x1 = Math.min(marq.x0, e.clientX),
+          y1 = Math.min(marq.y0, e.clientY),
+          x2 = Math.max(marq.x0, e.clientX),
+          y2 = Math.max(marq.y0, e.clientY);
+        if (!marqHit && x2 - x1 < 6 && y2 - y1 < 6) return;
+        marqHit = true;
+        const m = $("marquee");
+        m.style.display = "block";
+        m.style.left = x1 + "px";
+        m.style.top = y1 + "px";
+        m.style.width = x2 - x1 + "px";
+        m.style.height = y2 - y1 + "px";
+        grid.querySelectorAll(".card").forEach((c) => {
+          const r = c.getBoundingClientRect();
+          const hit = !(r.right < x1 || r.left > x2 || r.bottom < y1 || r.top > y2);
+          c.classList.toggle("msel", hit);
+        });
+      });
+      window.addEventListener("pointerup", () => {
+        if (!marq) return;
+        marq = null;
+        $("marquee").style.display = "none";
+        if (!marqHit) return;
+        suppressClick = true;
+        const keys = [...grid.querySelectorAll(".card.msel")].map((c) => c.dataset.k);
+        if (keys.length) openMulti(keys);
+        else grid.querySelectorAll(".card.msel").forEach((c) => c.classList.remove("msel"));
+      });
+
+      // ---------- click + drag/drop (fixed cells) ----------
+      // hover affordances: ✕ bar over the title+number strip, ✎ over the graph area
+      function posOverlays(card) {
+        const cv = card.querySelector("canvas"),
+          hx = card.querySelector(".hx"),
+          he = card.querySelector(".he");
+        if (!cv || !hx || !he) return;
+        const ct = cv.offsetTop,
+          ch = cv.offsetHeight;
+        he.style.top = ct + "px";
+        he.style.height = ch + "px";
+        hx.style.top = "0"; // ✕ bar always on top, sized like title+number regardless of layout
+        hx.style.height = Math.max(24, card.clientHeight - ch) + "px";
+      }
+      grid.addEventListener("mouseover", (e) => {
+        if (!editMode) return;
+        grid.querySelectorAll(".demo").forEach((d) => d.classList.remove("demo"));
+        const card = e.target.closest(".card");
+        if (card) posOverlays(card);
+      });
+      grid.addEventListener("click", (e) => {
+        if (suppressClick) {
+          suppressClick = false;
+          return;
+        }
+        const x = e.target.closest(".hx");
+        if (x) {
+          removeTile(x.dataset.k);
+          return;
+        }
+        const ed = e.target.closest(".he");
+        if (ed) {
+          openEdit(ed.dataset.k);
+          return;
+        }
+        const add = e.target.closest(".addcard");
+        if (add) {
+          openAdd({ col: +add.dataset.col, row: +add.dataset.row });
+          return;
+        }
+        if (editMode) {
+          const c = e.target.closest(".card");
+          if (c && c.dataset.k) openEdit(c.dataset.k);
+        }
+      });
+      let dragKey = null;
+      grid.addEventListener("dragstart", (e) => {
+        const c = e.target.closest(".card");
+        if (!c || !editMode) return;
+        dragKey = c.dataset.k;
+        c.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+      });
+      grid.addEventListener("dragend", () => {
+        const c = $("c-" + dragKey)?.closest(".card");
+        if (c) c.classList.remove("dragging");
+        dragKey = null;
+        grid.querySelectorAll(".dragover").forEach((x) => x.classList.remove("dragover"));
+      });
+      grid.addEventListener("dragover", (e) => {
+        if (!dragKey) return;
+        e.preventDefault();
+        const t = e.target.closest(".addcard");
+        grid.querySelectorAll(".dragover").forEach((x) => x.classList.remove("dragover"));
+        if (t) t.classList.add("dragover");
+      });
+      grid.addEventListener("drop", (e) => {
+        if (!dragKey) return;
+        e.preventDefault();
+        const t = e.target.closest(".addcard");
+        if (t) moveTile(dragKey, +t.dataset.col, +t.dataset.row);
+        grid.querySelectorAll(".dragover").forEach((x) => x.classList.remove("dragover"));
+      });
+
+      // ---------- CRT FX overlay (WebGL) ----------
+      const FXC = $("fx");
+      let GL = null,
+        FXP = null,
+        fxRAF = 0,
+        fxLast = 0,
+        FXU = null;
+      function fxActive() {
+        const f = gridState.fx;
+        return !!(f && (f.mode === "i" || f.g || f.n || f.f || f.c));
+      }
+      function fxGlobal() {
+        const G = gridState.fx;
+        return {
+          g: +G.g || 0,
+          n: +G.n || 0,
+          f: +G.f || 0,
+          t: +G.t || 0,
+          c: +G.c || 0,
+          gs: G.gs == null ? 100 : +G.gs,
+          ns: G.ns == null ? 100 : +G.ns,
+          fs: G.fs == null ? 100 : +G.fs,
+          ts: G.ts == null ? 100 : +G.ts,
+          cs: G.cs == null ? 100 : +G.cs,
+        };
+      }
+      function tileFx(s) {
+        const G = gridState.fx;
+        if (s && s.key === "__pv" && s.fx) return s.fx; // editor preview always shows its own settings
+        if (G.mode === "i" && s && s.fx) return s.fx;
+        return fxGlobal();
+      }
+      function initFx() {
+        if (GL !== null) return GL;
+        try {
+          GL = FXC.getContext("webgl", { alpha: false, antialias: false });
+        } catch (e) {
+          GL = false;
+        }
+        if (!GL) {
+          GL = false;
+          return GL;
+        }
+        const vs = "attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}";
+        const fs =
+          "precision mediump float;\n" +
+          "uniform vec4 RC;uniform float T;uniform vec4 F;uniform vec4 S;\n" + // F: intensity 0..1, S: speed ×(g,n,f,c); RC: region rect
+          "float h21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}\n" +
+          "void main(){\n" +
+          "  float ph=(RC.x*.37+RC.y*.73)*.01;\n" + // per-region phase - tiles never animate in sync
+          "  vec2 uv=(gl_FragCoord.xy-RC.xy)/RC.zw; vec2 cuv=uv;\n" +
+          "  if(F.w>0.){vec2 c=uv*2.-1.;float r2=dot(c,c);\n" +
+          "    c*=1.+.05*F.w*r2*(1.+.1*sin((T*S.w+ph)*.8));\n" + // curve speed = subtle glass breathing
+          "    cuv=(c+1.)*.5;}\n" +
+          "  vec3 m=vec3(1.);float add=0.;\n" +
+          "  if(F.x>0.){\n" +
+          "    float k=mod(floor(gl_FragCoord.x),3.);\n" +
+          "    vec3 tri=k<.5?vec3(1.,.72,.72):k<1.5?vec3(.72,1.,.72):vec3(.72,.72,1.);\n" +
+          "    m*=mix(vec3(1.),tri,.45*F.x);\n" +
+          "    float sl=.55+.45*sin(cuv.y*RC.w*2.2);\n" +
+          "    m*=mix(1.,sl,.4*F.x);\n" +
+          "    float rl=exp(-pow((fract(cuv.y*.999+(T*S.x+ph)*.05)-.5)*26.,2.));\n" +
+          "    add+=rl*.035*F.x;\n" +
+          "  }\n" +
+          "  if(F.w>0.){\n" +
+          "    vec2 c=cuv*2.-1.;\n" +
+          "    m*=1.-.16*F.w;\n" + // glass tint: dims the whole region
+          "    m*=clamp(1.-.55*F.w*pow(max(0.,dot(c,c)-.25),1.2),0.,1.);\n" +
+          "    vec2 q=abs(c);\n" +
+          "    m*=smoothstep(1.02,.985,max(q.x,q.y));\n" +
+          "  }\n" +
+          "  if(F.z>0.){ float tf=T*S.z+ph; m*=1.-F.z*(.04-.04*sin(tf*97.)-.02*(h21(vec2(floor(tf*18.),7.))-.5)); }\n" +
+          "  float n=0.;\n" +
+          "  if(F.y>0.){ n=(h21(gl_FragCoord.xy+floor((T*S.y+ph)*24.)*13.7)-.5)*.14*F.y; }\n" +
+          "  gl_FragColor=vec4(vec3(.5)*m+n+add,1.);\n" +
+          "}";
+        function sh(t, src) {
+          const o = GL.createShader(t);
+          GL.shaderSource(o, src);
+          GL.compileShader(o);
+          return o;
+        }
+        FXP = GL.createProgram();
+        GL.attachShader(FXP, sh(GL.VERTEX_SHADER, vs));
+        GL.attachShader(FXP, sh(GL.FRAGMENT_SHADER, fs));
+        GL.linkProgram(FXP);
+        if (!GL.getProgramParameter(FXP, GL.LINK_STATUS)) {
+          GL = false;
+          return GL;
+        }
+        GL.useProgram(FXP);
+        const b = GL.createBuffer();
+        GL.bindBuffer(GL.ARRAY_BUFFER, b);
+        GL.bufferData(GL.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), GL.STATIC_DRAW);
+        const lp = GL.getAttribLocation(FXP, "p");
+        GL.enableVertexAttribArray(lp);
+        GL.vertexAttribPointer(lp, 2, GL.FLOAT, false, 0, 0);
+        FXU = {
+          RC: GL.getUniformLocation(FXP, "RC"),
+          T: GL.getUniformLocation(FXP, "T"),
+          F: GL.getUniformLocation(FXP, "F"),
+          S: GL.getUniformLocation(FXP, "S"),
+        };
+        return GL;
+      }
+      function fxSize() {
+        if (!GL) return;
+        const d = Math.min(2, dpr);
+        const W = Math.round(innerWidth * d),
+          H = Math.round(innerHeight * d);
+        if (FXC.width !== W || FXC.height !== H) {
+          FXC.width = W;
+          FXC.height = H;
+          GL.viewport(0, 0, W, H);
+        }
+      }
+      function fxFrame(ts) {
+        if (!fxActive() || !GL) {
+          fxRAF = 0;
+          return;
+        }
+        fxRAF = requestAnimationFrame(fxFrame);
+        if (ts - fxLast < 33) return; // ~30 fps is plenty for noise/flicker
+        fxLast = ts;
+        const f = gridState.fx,
+          W = FXC.width,
+          H = FXC.height,
+          d = Math.min(2, dpr);
+        GL.uniform1f(FXU.T, ts / 1000);
+        GL.disable(GL.SCISSOR_TEST);
+        GL.clearColor(0.5, 0.5, 0.5, 1); // neutral for hard-light = invisible
+        GL.clear(GL.COLOR_BUFFER_BIT);
+        const glRect = (r) => [
+          Math.round(r.left * d),
+          Math.round(H - r.bottom * d),
+          Math.round((r.right - r.left) * d),
+          Math.round((r.bottom - r.top) * d),
+        ];
+        const sp = (v) => (v == null ? 100 : +v) / 100;
+        function setF(tf) {
+          const a = (+tf.g || 0) / 100,
+            b = (+tf.n || 0) / 100,
+            c2 = (+tf.f || 0) / 100,
+            e2 = (+tf.c || 0) / 100;
+          if (!(a || b || c2 || e2)) return false;
+          GL.uniform4f(FXU.F, a, b, c2, e2);
+          GL.uniform4f(FXU.S, sp(tf.gs), sp(tf.ns), sp(tf.fs), sp(tf.cs));
+          return true;
+        }
+        function drawSc(g, rc) {
+          if (g[2] < 2 || g[3] < 2) return;
+          GL.scissor(Math.max(0, g[0]), Math.max(0, g[1]), g[2], g[3]);
+          GL.uniform4f(FXU.RC, rc[0], rc[1], rc[2], rc[3]);
+          GL.drawArrays(GL.TRIANGLES, 0, 3);
+        }
+        // open dialog panels stay clean - the shader draws around them
+        const panels = [];
+        ["modal", "smodal", "cmodal", "setmodal"].forEach((id) => {
+          const m = $(id);
+          if (m && m.style.display === "flex") {
+            const p = m.querySelector(".panel");
+            if (p) panels.push(p.getBoundingClientRect());
+          }
+        });
+        const U = panels.length
+          ? {
+              left: Math.min(...panels.map((r) => r.left)),
+              top: Math.min(...panels.map((r) => r.top)),
+              right: Math.max(...panels.map((r) => r.right)),
+              bottom: Math.max(...panels.map((r) => r.bottom)),
+            }
+          : null;
+        const hits = (r) => U && !(r.right < U.left || r.left > U.right || r.bottom < U.top || r.top > U.bottom);
+        if (f.mode !== "i") {
+          if (setF(fxGlobal())) {
+            if (!U) {
+              GL.uniform4f(FXU.RC, 0, 0, W, H);
+              GL.drawArrays(GL.TRIANGLES, 0, 3);
+            } else {
+              GL.enable(GL.SCISSOR_TEST);
+              const iw = innerWidth,
+                ih = innerHeight,
+                rc = [0, 0, W, H];
+              [
+                [0, 0, iw, U.top],
+                [0, U.bottom, iw, ih - U.bottom],
+                [0, U.top, U.left, U.bottom - U.top],
+                [U.right, U.top, iw - U.right, U.bottom - U.top],
+              ].forEach((s2) =>
+                drawSc(glRect({ left: s2[0], top: s2[1], right: s2[0] + s2[2], bottom: s2[1] + s2[3] }), rc),
+              );
+              GL.disable(GL.SCISSOR_TEST);
+            }
+          }
+        } else {
+          // individual mode: each tile is its own little CRT (scissored draws - same total pixels as one pass)
+          // border width + margin so the glass edge falloff never swallows the border line
+          const bezelInset = (el) => (el.classList.contains("monitor") ? 10 : el.classList.contains("classic") ? 3 : 0);
+          const inset = (r, bi) =>
+            bi ? { left: r.left + bi, top: r.top + bi, right: r.right - bi, bottom: r.bottom - bi } : r;
+          GL.enable(GL.SCISSOR_TEST);
+          grid.querySelectorAll(".card").forEach((el) => {
+            const s = cards[el.dataset.k];
+            if (!s) return;
+            const r = el.getBoundingClientRect();
+            if (hits(r)) return; // don't shade tiles under a dialog
+            if (!setF(tileFx(s))) return;
+            const g = glRect(inset(r, bezelInset(el))); // FX stays behind the bezel
+            drawSc(g, g);
+          });
+          GL.disable(GL.SCISSOR_TEST);
+        }
+        // live preview card in the tile editor uses its own per-tile settings (both modes)
+        if (
+          modalOpen() &&
+          mConf &&
+          mConf.fx &&
+          $("smodal").style.display !== "flex" &&
+          $("cmodal").style.display !== "flex"
+        ) {
+          const pv = $("pvcard");
+          if (pv && setF(mConf.fx)) {
+            const bi = pv.classList.contains("monitor") ? 10 : pv.classList.contains("classic") ? 3 : 0;
+            const r = pv.getBoundingClientRect();
+            const g = glRect(
+              bi ? { left: r.left + bi, top: r.top + bi, right: r.right - bi, bottom: r.bottom - bi } : r,
+            );
+            GL.enable(GL.SCISSOR_TEST);
+            drawSc(g, g);
+            GL.disable(GL.SCISSOR_TEST);
+          }
+        }
+      }
+      function gFxUI() {
+        const f = gridState.fx;
+        $("g-fx")
+          .querySelectorAll(".fxrow")
+          .forEach((row) => {
+            const k = row.querySelector("button").dataset.k,
+              v = +f[k] || 0;
+            row.querySelector("button").classList.toggle("on", v > 0);
+            row.querySelector(`input[data-k="${k}"]`).value = v;
+            row.querySelector(`b[data-k="${k}"]`).textContent = v > 0 ? v + "%" : "OFF";
+            const sp = row.querySelector(`input[data-k="${k}s"]`);
+            if (sp) {
+              const sv = f[k + "s"] == null ? 100 : +f[k + "s"];
+              sp.value = sv;
+              row.querySelector(`b[data-k="${k}s"]`).textContent = "×" + (sv / 100).toFixed(1);
+            }
+          });
+      }
+      function applyFx() {
+        const f = gridState.fx,
+          on = fxActive() && initFx();
+        FXC.style.display = on ? "block" : "none";
+        document.body.classList.toggle("fxon", !!on);
+        if (on) {
+          fxSize();
+          if (!fxRAF) fxRAF = requestAnimationFrame(fxFrame);
+        }
+        const w = f.mode === "i" ? 0 : +f.w || 0; // accent wash sits behind the glass (GLOB mode only)
+        $("tint").style.display = w > 0 ? "block" : "none";
+        $("tint").style.opacity = ((w / 100) * 0.9).toFixed(3);
+        gFxUI();
+        const mb = $("fx-mode");
+        if (mb) {
+          mb.textContent = f.mode === "i" ? "INDIV" : "GLOB";
+          mb.classList.toggle("on", f.mode === "i");
+        }
+      }
+      $("g-fx").onclick = (e) => {
+        const b = e.target.closest("button");
+        if (!b) return;
+        const k = b.dataset.k,
+          cur = +gridState.fx[k] || 0;
+        if (cur > 0) {
+          b.dataset.last = cur;
+          gridState.fx[k] = 0;
+        } else gridState.fx[k] = +b.dataset.last || 55;
+        applyFx();
+        saveGrid();
+      };
+      $("g-fx").addEventListener("input", (e) => {
+        const sl = e.target.closest("input[type=range]");
+        if (!sl) return;
+        gridState.fx[sl.dataset.k] = +sl.value;
+        applyFx();
+        saveGrid();
+      });
+      $("fx-mode").onclick = () => {
+        gridState.fx.mode = gridState.fx.mode === "i" ? "g" : "i";
+        applyFx();
+        saveGrid();
+        renderAll();
+      };
+      window.addEventListener("resize", fxSize);
+
+      // ---------- settings dialog (Enter) ----------
+      function setOpen() {
+        $("set-host").value = NETDATA;
+        $("set-refresh").value = REFRESH_MS;
+        $("set-icon").value = gridState.icon || "";
+        $("set-title").value = gridState.title || "System Monitor";
+        gFxUI();
+        $("setmodal").style.display = "flex";
+        // lock the dialog to the Screen tab's height so switching tabs never resizes it
+        const ts = $("tab-screen"),
+          vis = ts.style.display !== "none";
+        ts.style.display = "";
+        const h = ts.offsetHeight;
+        if (!vis) ts.style.display = "none";
+        ["tab-net", "tab-save"].forEach((id) => ($(id).style.minHeight = h + "px"));
+      }
+      function setClose() {
+        $("setmodal").style.display = "none";
+      }
+      document.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter") return;
+        const t = e.target;
+        if (
+          t &&
+          (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA" || t.tagName === "BUTTON")
+        )
+          return;
+        if ($("setmodal").style.display === "flex") {
+          setClose();
+          return;
+        }
+        if (modalOpen() || $("smodal").style.display === "flex" || $("cmodal").style.display === "flex") return;
+        setOpen();
+      });
+      $("set-x").onclick = setClose;
+      $("setmodal").onclick = (e) => {
+        if (e.target.id === "setmodal") setClose();
+      };
+      $("set-tabs").onclick = (e) => {
+        const b = e.target.closest("button");
+        if (!b) return;
+        setSeg("set-tabs", b.dataset.v);
+        $("tab-screen").style.display = b.dataset.v === "screen" ? "" : "none";
+        $("tab-net").style.display = b.dataset.v === "net" ? "" : "none";
+        $("tab-save").style.display = b.dataset.v === "save" ? "" : "none";
+      };
+      $("set-hostapply").onclick = () => {
+        const h = $("set-host").value.trim().replace(/\/+$/, "");
+        gridState.icon = $("set-icon").value.trim();
+        gridState.title = $("set-title").value.trim() || "System Monitor";
+        saveGrid();
+        const rf = Math.max(250, +$("set-refresh").value || 1000);
+        try {
+          localStorage.setItem("rc_refresh", String(rf));
+        } catch (e) {}
+        if (h) {
+          try {
+            localStorage.setItem("rc_host", h);
+          } catch (e) {}
+        }
+        location.reload();
+      };
+      $("set-export").onclick = () => {
+        const get = (k) => {
+          try {
+            return JSON.parse(localStorage.getItem(k) || "null");
+          } catch (e) {
+            return null;
+          }
+        };
+        const data = {
+          app: "netdata-retro-console",
+          v: 1,
+          host: localStorage.getItem("rc_host") || NETDATA,
+          refresh: +localStorage.getItem("rc_refresh") || REFRESH_MS,
+          layout: get("rc_layout"),
+          grid: get("rc_grid"),
+          styles: get("rc_styles"),
+        };
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+        a.download = "netdata-retro-backup.json";
+        a.click();
+        URL.revokeObjectURL(a.href);
+      };
+      $("set-import").onclick = () => $("set-file").click();
+      $("set-file").onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const rd = new FileReader();
+        rd.onload = () => {
+          try {
+            const d = JSON.parse(rd.result);
+            if (!d || d.app !== "netdata-retro-console") {
+              alert("Not a Netdata Retro Console backup file.");
+              return;
+            }
+            if (d.layout) localStorage.setItem("rc_layout", JSON.stringify(d.layout));
+            if (d.grid) localStorage.setItem("rc_grid", JSON.stringify(d.grid));
+            if (d.styles) localStorage.setItem("rc_styles", JSON.stringify(d.styles));
+            if (d.host) localStorage.setItem("rc_host", d.host);
+            if (d.refresh) localStorage.setItem("rc_refresh", String(Math.max(250, +d.refresh || 1000)));
+            location.reload();
+          } catch (err) {
+            alert("Could not read that backup file.");
+          }
+        };
+        rd.readAsText(file);
+      };
+
+      loadGrid();
+      loadStyles();
+      applyAccent();
+      applyFx();
+      $("h1t").textContent = (gridState.icon ? gridState.icon + " " : "") + gridState.title;
+      document.title = gridState.title.toUpperCase();
+
+      // ---------- smooth line ticker (1s delay, head glides to each new point) ----------
+      let lastTick = 0,
+        lineRAF = 0;
+      function interpData(d, t) {
+        const n = d.length;
+        if (n < 2) return d;
+        const out = d.slice(0, n - 1);
+        out[n - 2] = d[n - 2] + (d[n - 1] - d[n - 2]) * t;
+        return out;
+      }
+      function pvSmooth() {
+        return modalOpen() && pSpec && pSpec.type === "line" && pSpec.anim === "smooth";
+      }
+      function smoothTiles() {
+        return SPECS.filter((s) => cards[s.key] && s.type === "line" && s.anim === "smooth");
+      }
+      function lineFrame(now) {
+        const list = smoothTiles();
+        if (!list.length && !pvSmooth()) {
+          lineRAF = 0;
+          return;
+        }
+        lineRAF = requestAnimationFrame(lineFrame);
+        const t = Math.max(0, Math.min(1, (now - lastTick) / REFRESH_MS));
+        FRAMEFRAC = 1 / 30;
+        function drawScaled(cv, s, data) {
+          const [cx, cw, ch2] = setup(cv);
+          let dd = interpData(data, t);
+          const sv = scaleView(s, data),
+            om = s.max;
+          if (sv) {
+            dd = dd.map((x) => x - sv.base);
+            if (sv.top != null) s.max = sv.top;
+          }
+          drawLine(cx, cw, ch2, s, dd);
+          s.max = om;
+        }
+        list.forEach((s) => {
+          const data = hist[s.key];
+          if (!data || data.length < 2) return;
+          const cv = $("c-" + s.key);
+          if (!cv || !cv.clientWidth) return;
+          drawScaled(cv, s, data);
+        });
+        if (pvSmooth() && PH.length >= 2) {
+          const cv = $("pv-c");
+          if (cv && cv.clientWidth) drawScaled(cv, pSpec, PH);
+        }
+        FRAMEFRAC = 1;
+      }
+      function ensureLineLoop() {
+        if (!lineRAF && (smoothTiles().length || pvSmooth())) lineRAF = requestAnimationFrame(lineFrame);
+      }
+      [...$("swatches").children].forEach((x) => x.classList.toggle("on", x.dataset.c === gridState.accent));
+
+      async function tick() {
+        try {
+          const m = await (await fetch(NETDATA + "/api/v1/allmetrics?format=json", { cache: "no-store" })).json();
+          LASTM = m;
+          lastTick = performance.now();
+          if (!built) build(m);
+          $("led").classList.remove("dead");
+          $("conn").textContent = "LINK";
+          $("conn").style.color = "var(--green)";
+          for (const s of SPECS) {
+            if (!cards[s.key]) continue;
+            let v = null;
+            try {
+              v = s.calc(m);
+            } catch (e) {}
+            const a = hist[s.key];
+            a.push(v == null || isNaN(v) ? 0 : v);
+            if (a.length > HISTORY) a.shift();
+            render(s, true);
+          }
+          previewTick(m);
+          ensureLineLoop();
+          const up = m["system.uptime"];
+          if (up) {
+            const val = Object.values(up.dimensions)[0].value;
+            const d = Math.floor(val / 86400),
+              hh = Math.floor((val % 86400) / 3600),
+              mm = Math.floor((val % 3600) / 60);
+            $("uptime").textContent =
+              (d ? d + " " : "") + String(hh).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+          }
+          $("clock").textContent = new Date().toLocaleTimeString("en-GB");
+        } catch (e) {
+          $("led").classList.add("dead");
+          $("conn").textContent = "SIGNAL LOST";
+          $("conn").style.color = "var(--amber)";
+        }
+      }
+      tick();
+      setInterval(tick, REFRESH_MS);
+    </script>
+  </body>
+</html>
