@@ -968,7 +968,7 @@
         justify-content: center;
       }
       .sepv {
-        border: 1px solid var(--grid);
+        border: 1px solid #2c3c2c;
         background: #020409;
         display: block;
       }
@@ -2353,12 +2353,16 @@
           cpiv: sh.cpiv,
           cmode: sh.cmode,
         }));
-        // keep the authored aspect: letterbox the design inside the canvas instead of stretching it
+        // keep the authored aspect when the tile's CELL ratio differs from the design's
+        // (reusing a 3x1 design on a 2x2 tile letterboxes; on a matching-ratio tile it
+        // fills edge-to-edge - the title/number chrome squash is shared by everything)
         let ox = 0,
           oy = 0,
           dw = w,
           dh = h;
-        if (def.asp) {
+        const cellRatio = s.w && s.h ? s.w / s.h : null;
+        const fills = cellRatio != null && def.asp && Math.abs(cellRatio - def.asp) < 0.01;
+        if (def.asp && !fills) {
           if (w / h > def.asp) {
             dw = h * def.asp;
             ox = (w - dw) / 2;
@@ -3553,6 +3557,8 @@
           titlecol: mConf.titlecol,
           bcol: mConf.bcol,
           fx: mConf.fx,
+          w: mConf.w,
+          h: mConf.h,
           user: mConf.user,
           id: mConf.id,
           mode: mConf.mode,
