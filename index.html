@@ -305,10 +305,7 @@
         border: 1px solid var(--bcol, var(--accent, #4dff5a));
         border-radius: 0;
       }
-      .card.bdash {
-        border: 1px dashed var(--bcol, var(--accent, #4dff5a));
-        border-radius: 0;
-      }
+      .card.bdash,
       .card.bcorner {
         border-color: transparent;
         border-radius: 0;
@@ -320,23 +317,33 @@
         inset: 0;
         pointer-events: none;
         z-index: 2;
+        --bc: var(--bcol, var(--accent, #4dff5a));
         background:
-          linear-gradient(var(--bcol, var(--accent, #4dff5a)), var(--bcol, var(--accent, #4dff5a))) left 0 top 0 / 14px
-            2px,
-          linear-gradient(var(--bcol, var(--accent, #4dff5a)), var(--bcol, var(--accent, #4dff5a))) left 0 top 0 / 2px
-            14px,
-          linear-gradient(var(--bcol, var(--accent, #4dff5a)), var(--bcol, var(--accent, #4dff5a))) right 0 top 0 / 14px
-            2px,
-          linear-gradient(var(--bcol, var(--accent, #4dff5a)), var(--bcol, var(--accent, #4dff5a))) right 0 top 0 / 2px
-            14px,
-          linear-gradient(var(--bcol, var(--accent, #4dff5a)), var(--bcol, var(--accent, #4dff5a))) left 0 bottom 0 /
-            14px 2px,
-          linear-gradient(var(--bcol, var(--accent, #4dff5a)), var(--bcol, var(--accent, #4dff5a))) left 0 bottom 0 /
-            2px 14px,
-          linear-gradient(var(--bcol, var(--accent, #4dff5a)), var(--bcol, var(--accent, #4dff5a))) right 0 bottom 0 /
-            14px 2px,
-          linear-gradient(var(--bcol, var(--accent, #4dff5a)), var(--bcol, var(--accent, #4dff5a))) right 0 bottom 0 /
-            2px 14px;
+          linear-gradient(var(--bc), var(--bc)) left 0 top 0 / 14px 2px,
+          linear-gradient(var(--bc), var(--bc)) left 0 top 0 / 2px 14px,
+          linear-gradient(var(--bc), var(--bc)) right 0 top 0 / 14px 2px,
+          linear-gradient(var(--bc), var(--bc)) right 0 top 0 / 2px 14px,
+          linear-gradient(var(--bc), var(--bc)) left 0 bottom 0 / 14px 2px,
+          linear-gradient(var(--bc), var(--bc)) left 0 bottom 0 / 2px 14px,
+          linear-gradient(var(--bc), var(--bc)) right 0 bottom 0 / 14px 2px,
+          linear-gradient(var(--bc), var(--bc)) right 0 bottom 0 / 2px 14px;
+        background-repeat: no-repeat;
+      }
+      .card.bdash::after {
+        /* spaced dashes at the same 2px weight as the corner brackets */
+        background:
+          linear-gradient(var(--bc), var(--bc)) left 0 top 0 / 14px 2px,
+          linear-gradient(var(--bc), var(--bc)) left 0 top 0 / 2px 14px,
+          linear-gradient(var(--bc), var(--bc)) right 0 top 0 / 14px 2px,
+          linear-gradient(var(--bc), var(--bc)) right 0 top 0 / 2px 14px,
+          linear-gradient(var(--bc), var(--bc)) left 0 bottom 0 / 14px 2px,
+          linear-gradient(var(--bc), var(--bc)) left 0 bottom 0 / 2px 14px,
+          linear-gradient(var(--bc), var(--bc)) right 0 bottom 0 / 14px 2px,
+          linear-gradient(var(--bc), var(--bc)) right 0 bottom 0 / 2px 14px,
+          repeating-linear-gradient(90deg, var(--bc) 0 7px, transparent 7px 19px) left 0 top 0 / 100% 2px,
+          repeating-linear-gradient(90deg, var(--bc) 0 7px, transparent 7px 19px) left 0 bottom 0 / 100% 2px,
+          repeating-linear-gradient(0deg, var(--bc) 0 7px, transparent 7px 19px) left 0 top 0 / 2px 100%,
+          repeating-linear-gradient(0deg, var(--bc) 0 7px, transparent 7px 19px) right 0 top 0 / 2px 100%;
         background-repeat: no-repeat;
       }
       .card.monitor {
@@ -419,9 +426,38 @@
         justify-content: space-between;
         letter-spacing: 0.12em;
         flex: 0 0 auto;
+        white-space: nowrap; /* never a second row - long titles clip and roll on hover */
+      }
+      .lbl .t {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        margin-right: 6px;
+      }
+      .lbl .ti {
+        display: inline-block;
+        white-space: nowrap;
+      }
+      body:not(.edit) .card:hover .lbl .ti.scroll {
+        animation: tmarq 6s linear infinite;
+      }
+      @keyframes tmarq {
+        0%,
+        12% {
+          transform: translateX(0);
+        }
+        48%,
+        60% {
+          transform: translateX(var(--tshift, 0px));
+        }
+        96%,
+        100% {
+          transform: translateX(0);
+        }
       }
       .u {
         color: #67766a;
+        flex: 0 0 auto;
       }
       .disp {
         position: relative;
@@ -1117,13 +1153,6 @@
                 <button data-v="dark">Dark</button><button data-v="beige">Beige</button>
               </div>
             </div>
-            <div id="bcolrow" style="visibility: hidden">
-              <label>Border colour</label>
-              <div class="stoprow">
-                <button class="tbtn" id="m-bacc" title="Follow the accent colour">ACC</button
-                ><span class="pal" id="borderpal"></span>
-              </div>
-            </div>
             <div class="row">
               <button class="del" id="m-del" style="display: none">Delete</button>
               <button id="m-cancel">Cancel</button>
@@ -1164,6 +1193,13 @@
             <div class="stoprow">
               <button class="tbtn" id="mw-acc" title="Follow the accent colour">ACC</button>
               <span class="pal" id="mw-pal"></span>
+            </div>
+            <div id="bcolrow" style="visibility: hidden">
+              <label>Border colour</label>
+              <div class="stoprow">
+                <button class="tbtn" id="m-bacc" title="Follow the accent colour">ACC</button
+                ><span class="pal" id="borderpal"></span>
+              </div>
             </div>
           </div>
         </div>
@@ -1830,7 +1866,7 @@
         el.draggable = editMode;
         styleTile(el, s);
         const sub = s.type === "cpu" && CORES.length ? ` · ${CORES.length} CORES` : "";
-        const head = `<div class="lbl"${s.titleon === false ? ' style="visibility:hidden"' : ""}><span>${s.label}${sub}</span><span class="u">${unitLabel(s.unit)}</span></div>`;
+        const head = `<div class="lbl"${s.titleon === false ? ' style="visibility:hidden"' : ""}><span class="t"><span class="ti">${s.label}${sub}</span></span><span class="u">${unitLabel(s.unit)}</span></div>`;
         const disp = `<div class="disp" style="text-align:${s.numalign || (s.numpos === "bottom" ? "center" : "right")}${s.numon === false ? ";visibility:hidden" : ""}"><span class="ghost" id="g-${s.key}"></span><span class="val" id="v-${s.key}">-</span></div>`;
         const canv = `<canvas id="c-${s.key}"></canvas>`;
         const mid = s.numpos === "bottom" ? canv + disp : disp + canv;
@@ -3500,6 +3536,7 @@
           unit: mConf.unit,
           numcol: mConf.numcol,
           titlecol: mConf.titlecol,
+          bcol: mConf.bcol,
           fx: mConf.fx,
           user: mConf.user,
           id: mConf.id,
@@ -3511,7 +3548,7 @@
       }
       function rebuildPvCard() {
         const sub = mConf.style === "cpu" && CORES.length ? ` · ${CORES.length} CORES` : "";
-        const head = `<div class="lbl"${mConf.title3 === "off" ? ' style="visibility:hidden"' : ""}><span>${mConf.label || "PREVIEW"}${sub}</span><span class="u">${unitLabel(mConf.unit || "")}</span></div>`;
+        const head = `<div class="lbl"${mConf.title3 === "off" ? ' style="visibility:hidden"' : ""}><span class="t"><span class="ti">${mConf.label || "PREVIEW"}${sub}</span></span><span class="u">${unitLabel(mConf.unit || "")}</span></div>`;
         const disp = `<div class="disp" style="text-align:${mConf.numalign || (mConf.numpos === "bottom" ? "center" : "right")}${mConf.numon === false ? ";visibility:hidden" : ""}"><span class="ghost" id="pv-g"></span><span class="val" id="pv-v">-</span></div>`;
         const canv = `<canvas id="pv-c"></canvas>`;
         const mid = mConf.numpos === "bottom" ? canv + disp : disp + canv;
@@ -4951,9 +4988,22 @@
         hx.style.height = Math.max(24, card.clientHeight - ch) + "px";
       }
       grid.addEventListener("mouseover", (e) => {
-        if (!editMode) return;
-        grid.querySelectorAll(".demo").forEach((d) => d.classList.remove("demo"));
         const card = e.target.closest(".card");
+        if (!editMode) {
+          // dashboard mode: overflowing titles roll right-to-left on hover
+          if (!card) return;
+          const ti = card.querySelector(".lbl .ti"),
+            track = ti && ti.parentElement;
+          if (ti && track) {
+            const d = ti.scrollWidth - track.clientWidth;
+            if (d > 2) {
+              ti.style.setProperty("--tshift", -(d + 6) + "px");
+              ti.classList.add("scroll");
+            } else ti.classList.remove("scroll");
+          }
+          return;
+        }
+        grid.querySelectorAll(".demo").forEach((d) => d.classList.remove("demo"));
         if (card) posOverlays(card);
       });
       grid.addEventListener("click", (e) => {
