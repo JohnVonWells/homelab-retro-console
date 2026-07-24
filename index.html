@@ -291,6 +291,7 @@
         justify-content: start;
       }
       .card {
+        isolation: isolate; /* keeps the glow layer above this card's own background */
         border: 1px solid transparent; /* flat by default - border styles: classic / monitor */
         border-radius: 5px;
         background: var(--panel);
@@ -323,8 +324,7 @@
         position: absolute;
         inset: 0;
         pointer-events: none;
-        z-index: 2; /* over the content, under the hover overlays */
-        mix-blend-mode: overlay;
+        z-index: -1; /* phosphor glow BEHIND the graph content, above the card's black */
         display: none;
       }
       .card .hx,
@@ -562,8 +562,6 @@
         pointer-events: none;
         z-index: 90; /* below the glass (#fx at 100) */
         display: none;
-        background: var(--acc, #4dff5a);
-        mix-blend-mode: overlay;
       }
       .strow {
         display: flex;
@@ -1113,9 +1111,9 @@
               <button class="tbtn" id="m-tacc" title="Follow the accent colour">ACC</button
               ><span class="pal" id="titlepal"></span>
             </div>
-            <label>Colour overlay (wash)</label>
+            <label>Screen glow (wash)</label>
             <div class="fxrow">
-              <button class="tbtn" id="mw-btn" title="Colour wash over this tile">WSH</button>
+              <button class="tbtn" id="mw-btn" title="Phosphor glow behind this tile's graph">WSH</button>
               <div class="fxsl">
                 <input type="range" id="mw-int" min="0" max="100" step="5" title="Intensity" /><b id="mw-val">OFF</b>
               </div>
@@ -1201,7 +1199,7 @@
               </div>
             </div>
             <div class="fxrow">
-              <button class="tbtn" data-k="w" title="Accent colour wash behind the glass">WSH</button>
+              <button class="tbtn" data-k="w" title="Phosphor glow behind the glass">WSH</button>
               <div class="fxsl">
                 <input type="range" data-k="w" min="0" max="100" step="5" title="Intensity" /><b data-k="w">OFF</b>
                 <span style="font-size: 9px; color: var(--accdim, #8fa)">accent overlay</span><b></b>
@@ -1946,8 +1944,12 @@
         if (t > 0) {
           const spd = Math.max(0.1, (f.ts == null ? 100 : +f.ts) / 100); // trail speed slider = decay rate
           let a = 1 - Math.pow(1 - (0.8 - 0.65 * (t / 100)), spd * FRAMEFRAC);
+          // erase a fraction of the previous frame instead of painting black over it -
+          // trails decay to TRANSPARENT, so the phosphor glow behind the canvas stays visible
+          ctx.globalCompositeOperation = "destination-out";
           ctx.fillStyle = `rgba(0,0,0,${a.toFixed(4)})`;
           ctx.fillRect(0, 0, w, h);
+          ctx.globalCompositeOperation = "source-over";
         } else ctx.clearRect(0, 0, w, h);
       }
 
@@ -2600,8 +2602,13 @@
         const wv = force || gridState.fx.mode === "i" ? +s.wash || 0 : 0;
         wel.style.display = wv > 0 ? "block" : "none";
         if (wv > 0) {
-          wel.style.background = s.washc && s.washc !== "acc" ? s.washc : gridState.accent;
-          wel.style.opacity = ((wv / 100) * 0.9).toFixed(3);
+          // powered-on phosphor: a soft raster glow behind the content, brightest mid-screen
+          const col = s.washc && s.washc !== "acc" ? s.washc : gridState.accent;
+          const a = wv / 100;
+          wel.style.opacity = "1";
+          wel.style.background =
+            `radial-gradient(ellipse at 50% 42%, ${rgbaOf(col, 0.38 * a)} 0%, ` +
+            `${rgbaOf(col, 0.14 * a)} 55%, ${rgbaOf(col, 0.04 * a)} 100%)`;
         }
       }
 
@@ -4763,6 +4770,10 @@
       }
       $("fillbtn").onclick = fillGrid;
       $("clrbtn").onclick = clearUser;
+      function rgbaOf(hex, a) {
+        const n = parseInt(hex.slice(1), 16);
+        return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a.toFixed(3)})`;
+      }
       function shade(hex, f) {
         // f>0 → toward white, f<0 → toward black
         const n = parseInt(hex.slice(1), 16),
@@ -4785,6 +4796,7 @@
       function setAccent(hex) {
         gridState.accent = hex;
         applyAccent();
+        applyFx();
         saveGrid();
         [...$("swatches").children].forEach((x) => x.classList.toggle("on", x.dataset.c === hex));
       }
@@ -5190,9 +5202,14 @@
           fxSize();
           if (!fxRAF) fxRAF = requestAnimationFrame(fxFrame);
         }
-        const w = f.mode === "i" ? 0 : +f.w || 0; // accent wash sits behind the glass (GLOB mode only)
+        const w = f.mode === "i" ? 0 : +f.w || 0; // accent glow behind the glass (GLOB mode only)
         $("tint").style.display = w > 0 ? "block" : "none";
-        $("tint").style.opacity = ((w / 100) * 0.9).toFixed(3);
+        if (w > 0) {
+          const a = w / 100;
+          $("tint").style.background =
+            `radial-gradient(ellipse at 50% 45%, ${rgbaOf(gridState.accent, 0.3 * a)} 0%, ` +
+            `${rgbaOf(gridState.accent, 0.1 * a)} 60%, rgba(0,0,0,0) 100%)`;
+        }
         gFxUI();
         const mb = $("fx-mode");
         if (mb) {
