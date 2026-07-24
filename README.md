@@ -17,9 +17,11 @@ _One metric, a dozen looks - every graph style side by side:_
 
 ![Different ways to show the same metric](screenshots/graph-styles.jpg)
 
-_The style creator: draw your own gauges on a snap grid:_
+_The style creator: draw your own gauges - shapes, colour bands and fill modes, previewed live:_
 
-![Create your own custom style](screenshots/style-creator.jpg)
+![Building a custom gauge in the style creator](screenshots/style-creator-1.gif)
+
+![Editing a custom widget style](screenshots/style-creator-2.gif)
 
 _Pick any Netdata chart from the navigator tree:_
 

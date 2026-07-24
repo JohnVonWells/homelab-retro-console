@@ -53,8 +53,16 @@
         pointer-events: none;
         z-index: 9;
         background:
-          repeating-linear-gradient(0deg, rgba(0, 0, 0, 0) 0 2px, rgba(0, 0, 0, 0.3) 2px 3px),
-          radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.72) 100%);
+          repeating-linear-gradient(
+            0deg,
+            rgba(0, 0, 0, 0) 0 2px,
+            rgba(0, 0, 0, 0.3) 2px 3px
+          ),
+          radial-gradient(
+            ellipse at center,
+            rgba(0, 0, 0, 0) 55%,
+            rgba(0, 0, 0, 0.72) 100%
+          );
         mix-blend-mode: multiply;
       }
       body.fxon::before {
@@ -75,6 +83,11 @@
         gap: 8px;
         align-items: center;
         margin: 6px 0;
+      }
+      #se-fd button {
+        font-size: 17px; /* the fill-mode glyphs need to read at a glance */
+        line-height: 1.1;
+        padding: 5px 8px;
       }
       .fxsl {
         flex: 1;
@@ -522,7 +535,7 @@
         text-shadow: 0 0 6px var(--red);
       }
       .panel.editor {
-        width: min(1340px, 97vw);
+        width: min(1580px, 97vw);
         max-height: 94vh;
         overflow: auto;
         padding: 14px 16px;
@@ -596,6 +609,11 @@
       .panel.editor.multi {
         width: auto;
         min-width: 440px;
+      }
+      #ecolours {
+        flex: 0 0 235px;
+        display: flex;
+        flex-direction: column;
       }
       #chartnav {
         flex: 0 0 250px;
@@ -914,21 +932,37 @@
         <div class="left">
           <h1 id="h1t" title="Toggle edit mode">◆ System Monitor</h1>
           <span id="ctrls">
-            <button class="tbtn" id="editbtn" title="Leave edit mode">EDIT</button>
+            <button class="tbtn" id="editbtn" title="Leave edit mode">
+              EDIT
+            </button>
             <button class="tbtn" id="setbtn" title="Settings (Enter)">⚙</button>
-            <button class="tbtn" id="fillbtn" title="Fill empty cells with test tiles">FILL</button>
-            <button class="tbtn" id="clrbtn" title="Remove all added tiles">CLR</button>
+            <button
+              class="tbtn"
+              id="fillbtn"
+              title="Fill empty cells with test tiles"
+            >
+              FILL
+            </button>
+            <button class="tbtn" id="clrbtn" title="Remove all added tiles">
+              CLR
+            </button>
             <label>SCALE <input type="range" id="sc-scale" step="2" /></label>
             <label>COLS <input type="range" id="sc-cols" step="1" /></label>
             <label>ROWS <input type="range" id="sc-rows" step="1" /></label>
-            <button class="tbtn" id="alignh" title="Align grid horizontally">⬌</button>
-            <button class="tbtn" id="alignv" title="Align grid vertically">⬍</button>
+            <button class="tbtn" id="alignh" title="Align grid horizontally">
+              ⬌
+            </button>
+            <button class="tbtn" id="alignv" title="Align grid vertically">
+              ⬍
+            </button>
           </span>
         </div>
         <div class="meta">
           <span>UPTIME <b id="uptime" class="dseg">--</b></span>
           <span>CLOCK <b id="clock" class="dseg">--:--:--</b></span>
-          <span class="status"><span class="led" id="led"></span><b id="conn">LINK</b></span>
+          <span class="status"
+            ><span class="led" id="led"></span><b id="conn">LINK</b></span
+          >
         </div>
       </header>
       <div class="gridwrap"><div class="grid" id="grid"></div></div>
@@ -938,165 +972,325 @@
       <div class="panel editor">
         <div class="ehead">
           <h3 id="m-title">TILE EDITOR</h3>
-          <button class="tbtn" id="m-close" title="Close" style="margin-left: auto">✕</button>
+          <button
+            class="tbtn"
+            id="m-close"
+            title="Close"
+            style="margin-left: auto"
+          >
+            ✕
+          </button>
         </div>
         <div class="ebody">
+          <div id="ecolours">
+            <label>Colour bands · drag nodes · click bar to add</label>
+            <div class="stopbar" id="stopbar">
+              <div class="stopgrad" id="stopgrad"></div>
+            </div>
+            <div class="stoprow">
+              <b id="stoppct">0%</b>
+              <span class="pal" id="stoppal"></span>
+              <button class="tbtn" id="stopacc" title="Use the accent colour">
+                ACC
+              </button>
+              <button class="tbtn" id="stopadd" title="Add node after selected">
+                +
+              </button>
+              <button class="tbtn" id="stopdel" title="Remove selected node">
+                −
+              </button>
+              <button class="tbtn" id="preset3" title="3 bands (low/mid/high)">
+                3
+              </button>
+              <button class="tbtn" id="preset5" title="5 bands, 20% steps">
+                5
+              </button>
+            </div>
+            <label>Number colour</label>
+            <div class="stoprow">
+              <button class="tbtn" id="m-nauto" title="Follow value colour">
+                AUTO</button
+              ><button
+                class="tbtn"
+                id="m-nacc"
+                title="Follow the accent colour"
+              >
+                ACC</button
+              ><span class="pal" id="numpal"></span>
+            </div>
+            <label>Title colour</label>
+            <div class="stoprow">
+              <button class="tbtn" id="m-tauto" title="Default label colour">
+                AUTO</button
+              ><button
+                class="tbtn"
+                id="m-tacc"
+                title="Follow the accent colour"
+              >
+                ACC</button
+              ><span class="pal" id="titlepal"></span>
+            </div>
+            <label>Colour overlay (wash)</label>
+            <div class="fxrow">
+              <button
+                class="tbtn"
+                id="mw-btn"
+                title="Colour wash over this tile"
+              >
+                WSH
+              </button>
+              <div class="fxsl">
+                <input
+                  type="range"
+                  id="mw-int"
+                  min="0"
+                  max="100"
+                  step="5"
+                  title="Intensity"
+                /><b id="mw-val">OFF</b>
+              </div>
+            </div>
+            <div class="stoprow">
+              <button class="tbtn" id="mw-acc" title="Follow the accent colour">
+                ACC
+              </button>
+              <span class="pal" id="mw-pal"></span>
+            </div>
+          </div>
           <div id="chartnav"></div>
           <div class="eleft">
             <div class="styles" id="m-styles"></div>
-            <div class="pvpane" id="pvpane"><div class="card" id="pvcard"></div></div>
+            <div class="pvpane" id="pvpane">
+              <div class="card" id="pvcard"></div>
+            </div>
             <div id="datatools">
               <div class="dtrow">
                 <span class="dtlab">DATA</span>
                 <span id="m-srcsel">
                   <select id="m-chart" title="Netdata chart"></select>
-                  <select id="m-dim" title="Dimension - one value or the sum of all"></select>
-                  <div class="seg" id="m-mode"><button data-v="abs">Value</button><button data-v="pct">%</button></div>
+                  <select
+                    id="m-dim"
+                    title="Dimension - one value or the sum of all"
+                  ></select>
+                  <div class="seg" id="m-mode">
+                    <button data-v="abs">Value</button
+                    ><button data-v="pct">%</button>
+                  </div>
                 </span>
                 <b id="m-srcname" style="display: none"></b>
               </div>
               <div class="dtrow">
                 <span class="dtlab">SCALE</span>
                 <div class="seg" id="m-scale">
-                  <button data-v="auto" title="0 → highest seen value">Auto</button
-                  ><button data-v="win" title="Follow min→max of the visible window - small changes fill the graph">
+                  <button data-v="auto" title="0 → highest seen value">
+                    Auto</button
+                  ><button
+                    data-v="win"
+                    title="Follow min→max of the visible window - small changes fill the graph"
+                  >
                     Window</button
-                  ><button data-v="fix" title="Fixed range you set">Fixed</button>
+                  ><button data-v="fix" title="Fixed range you set">
+                    Fixed
+                  </button>
                 </div>
-                <input type="number" id="m-smin" placeholder="min" title="Fixed range: minimum" />
-                <input type="number" id="m-smax" placeholder="max" title="Fixed range: maximum" />
+                <input
+                  type="number"
+                  id="m-smin"
+                  placeholder="min"
+                  title="Fixed range: minimum"
+                />
+                <input
+                  type="number"
+                  id="m-smax"
+                  placeholder="max"
+                  title="Fixed range: maximum"
+                />
               </div>
             </div>
             <div id="tilefx">
-              <label>Tile CRT FX · applies in INDIV mode · intensity + speed</label>
+              <label
+                >Tile CRT FX · applies in INDIV mode · intensity + speed</label
+              >
               <div id="m-fx">
                 <div class="fxrow">
-                  <button class="tbtn" data-k="g" title="Grille + scanlines">GRL</button>
+                  <button class="tbtn" data-k="g" title="Grille + scanlines">
+                    GRL
+                  </button>
                   <div class="fxsl">
-                    <input type="range" data-k="g" min="0" max="100" step="5" title="Intensity" /><b data-k="g">OFF</b>
-                    <input type="range" data-k="gs" min="0" max="300" step="10" title="Raster speed" /><b data-k="gs"
-                      >×1.0</b
-                    >
+                    <input
+                      type="range"
+                      data-k="g"
+                      min="0"
+                      max="100"
+                      step="5"
+                      title="Intensity"
+                    /><b data-k="g">OFF</b>
+                    <input
+                      type="range"
+                      data-k="gs"
+                      min="0"
+                      max="300"
+                      step="10"
+                      title="Raster speed"
+                    /><b data-k="gs">×1.0</b>
                   </div>
                 </div>
                 <div class="fxrow">
-                  <button class="tbtn" data-k="n" title="Static noise">NSE</button>
+                  <button class="tbtn" data-k="n" title="Static noise">
+                    NSE
+                  </button>
                   <div class="fxsl">
-                    <input type="range" data-k="n" min="0" max="100" step="5" title="Intensity" /><b data-k="n">OFF</b>
-                    <input type="range" data-k="ns" min="0" max="300" step="10" title="Noise speed" /><b data-k="ns"
-                      >×1.0</b
-                    >
+                    <input
+                      type="range"
+                      data-k="n"
+                      min="0"
+                      max="100"
+                      step="5"
+                      title="Intensity"
+                    /><b data-k="n">OFF</b>
+                    <input
+                      type="range"
+                      data-k="ns"
+                      min="0"
+                      max="300"
+                      step="10"
+                      title="Noise speed"
+                    /><b data-k="ns">×1.0</b>
                   </div>
                 </div>
                 <div class="fxrow">
                   <button class="tbtn" data-k="f" title="Flicker">FLK</button>
                   <div class="fxsl">
-                    <input type="range" data-k="f" min="0" max="100" step="5" title="Intensity" /><b data-k="f">OFF</b>
-                    <input type="range" data-k="fs" min="0" max="300" step="10" title="Flicker speed" /><b data-k="fs"
-                      >×1.0</b
-                    >
+                    <input
+                      type="range"
+                      data-k="f"
+                      min="0"
+                      max="100"
+                      step="5"
+                      title="Intensity"
+                    /><b data-k="f">OFF</b>
+                    <input
+                      type="range"
+                      data-k="fs"
+                      min="0"
+                      max="300"
+                      step="10"
+                      title="Flicker speed"
+                    /><b data-k="fs">×1.0</b>
                   </div>
                 </div>
                 <div class="fxrow">
-                  <button class="tbtn" data-k="t" title="Phosphor trails">TRL</button>
+                  <button class="tbtn" data-k="t" title="Phosphor trails">
+                    TRL
+                  </button>
                   <div class="fxsl">
-                    <input type="range" data-k="t" min="0" max="100" step="5" title="Trail length" /><b data-k="t"
-                      >OFF</b
-                    >
-                    <input type="range" data-k="ts" min="10" max="300" step="10" title="Decay speed" /><b data-k="ts"
-                      >×1.0</b
-                    >
+                    <input
+                      type="range"
+                      data-k="t"
+                      min="0"
+                      max="100"
+                      step="5"
+                      title="Trail length"
+                    /><b data-k="t">OFF</b>
+                    <input
+                      type="range"
+                      data-k="ts"
+                      min="10"
+                      max="300"
+                      step="10"
+                      title="Decay speed"
+                    /><b data-k="ts">×1.0</b>
                   </div>
                 </div>
                 <div class="fxrow">
-                  <button class="tbtn" data-k="c" title="Curved glass">CRV</button>
+                  <button class="tbtn" data-k="c" title="Curved glass">
+                    CRV
+                  </button>
                   <div class="fxsl">
-                    <input type="range" data-k="c" min="0" max="100" step="5" title="Intensity" /><b data-k="c">OFF</b>
-                    <input type="range" data-k="cs" min="0" max="300" step="10" title="Glass breathing speed" /><b
+                    <input
+                      type="range"
+                      data-k="c"
+                      min="0"
+                      max="100"
+                      step="5"
+                      title="Intensity"
+                    /><b data-k="c">OFF</b>
+                    <input
+                      type="range"
                       data-k="cs"
-                      >×1.0</b
-                    >
+                      min="0"
+                      max="300"
+                      step="10"
+                      title="Glass breathing speed"
+                    /><b data-k="cs">×1.0</b>
                   </div>
                 </div>
-              </div>
-              <label>Colour overlay (wash)</label>
-              <div class="fxrow">
-                <button class="tbtn" id="mw-btn" title="Colour wash over this tile">WSH</button>
-                <div class="fxsl">
-                  <input type="range" id="mw-int" min="0" max="100" step="5" title="Intensity" /><b id="mw-val">OFF</b>
-                </div>
-              </div>
-              <div class="stoprow">
-                <button class="tbtn" id="mw-acc" title="Follow the accent colour">ACC</button>
-                <span class="pal" id="mw-pal"></span>
               </div>
             </div>
           </div>
           <div class="eright">
-            <label>Colour bands · drag nodes · click bar to add</label>
-            <div class="stopbar" id="stopbar"><div class="stopgrad" id="stopgrad"></div></div>
-            <div class="stoprow">
-              <b id="stoppct">0%</b>
-              <span class="pal" id="stoppal"></span>
-              <button class="tbtn" id="stopacc" title="Use the accent colour">ACC</button>
-              <button class="tbtn" id="stopadd" title="Add node after selected">+</button>
-              <button class="tbtn" id="stopdel" title="Remove selected node">−</button>
-              <button class="tbtn" id="preset3" title="3 bands (low/mid/high)">3</button>
-              <button class="tbtn" id="preset5" title="5 bands, 20% steps">5</button>
-            </div>
             <div id="styleopts"></div>
             <div class="grid2" id="whrow">
               <div>
                 <label>Width (cells)</label>
                 <div class="seg" id="m-w">
-                  <button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button>
+                  <button data-v="1">1</button><button data-v="2">2</button
+                  ><button data-v="3">3</button>
                 </div>
               </div>
               <div>
                 <label>Height (cells)</label>
                 <div class="seg" id="m-h">
-                  <button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button>
+                  <button data-v="1">1</button><button data-v="2">2</button
+                  ><button data-v="3">3</button>
                 </div>
               </div>
             </div>
             <label>Number position</label>
-            <div class="seg" id="m-num"><button data-v="top">Above</button><button data-v="bottom">Below</button></div>
+            <div class="seg" id="m-num">
+              <button data-v="top">Above</button
+              ><button data-v="bottom">Below</button>
+            </div>
             <div id="nalrow">
               <label>Number align</label>
               <div class="seg" id="m-nal">
-                <button data-v="left">Left</button><button data-v="center">Centre</button
+                <button data-v="left">Left</button
+                ><button data-v="center">Centre</button
                 ><button data-v="right">Right</button>
               </div>
-            </div>
-            <label>Number colour</label>
-            <div class="stoprow">
-              <button class="tbtn" id="m-nauto" title="Follow value colour">AUTO</button
-              ><button class="tbtn" id="m-nacc" title="Follow the accent colour">ACC</button
-              ><span class="pal" id="numpal"></span>
             </div>
             <div class="grid2">
               <div>
                 <label>Number</label>
-                <div class="seg" id="m-numon"><button data-v="on">On</button><button data-v="off">Off</button></div>
+                <div class="seg" id="m-numon">
+                  <button data-v="on">On</button
+                  ><button data-v="off">Off</button>
+                </div>
               </div>
             </div>
             <label>Title</label>
             <div class="seg" id="m-titleon">
-              <button data-v="top">Above</button><button data-v="bottom">Below</button><button data-v="off">Off</button>
+              <button data-v="top">Above</button
+              ><button data-v="bottom">Below</button
+              ><button data-v="off">Off</button>
             </div>
             <label>Border</label>
             <div class="seg" id="m-border">
-              <button data-v="off">Off</button><button data-v="classic">Classic</button
+              <button data-v="off">Off</button
+              ><button data-v="classic">Classic</button
               ><button data-v="mon">Monitor</button>
             </div>
             <div id="bezelrow" style="visibility: hidden">
               <label>Bezel plastic</label>
               <div class="seg" id="m-bezel">
-                <button data-v="dark">Dark</button><button data-v="beige">Beige</button>
+                <button data-v="dark">Dark</button
+                ><button data-v="beige">Beige</button>
               </div>
             </div>
             <div class="row">
-              <button class="del" id="m-del" style="display: none">Delete</button>
+              <button class="del" id="m-del" style="display: none">
+                Delete
+              </button>
               <button id="m-cancel">Cancel</button>
               <button class="pri" id="m-add">Add</button>
             </div>
@@ -1106,81 +1300,208 @@
     </div>
 
     <div class="modal" id="setmodal" style="z-index: 26">
-      <div class="panel" style="width: 600px; max-width: 94vw; max-height: 92vh; overflow: auto">
+      <div
+        class="panel"
+        style="width: 600px; max-width: 94vw; max-height: 92vh; overflow: auto"
+      >
         <div class="ehead">
           <h3>SETTINGS</h3>
-          <button class="tbtn" id="set-x" title="Close" style="margin-left: auto">✕</button>
+          <button
+            class="tbtn"
+            id="set-x"
+            title="Close"
+            style="margin-left: auto"
+          >
+            ✕
+          </button>
         </div>
         <div class="seg" id="set-tabs" style="margin: 10px 0 4px">
-          <button data-v="screen" class="on">Screen</button><button data-v="net">Network</button
+          <button data-v="screen" class="on">Screen</button
+          ><button data-v="net">Network</button
           ><button data-v="save">Save</button>
         </div>
         <div id="tab-screen">
           <label>Accent colour</label>
           <span id="swatches" class="pal">
-            <button class="sw" data-c="#4dff5a" style="background: #4dff5a" title="Green"></button>
-            <button class="sw" data-c="#ffb000" style="background: #ffb000" title="Amber"></button>
-            <button class="sw" data-c="#33e1ff" style="background: #33e1ff" title="Cyan"></button>
-            <button class="sw" data-c="#e6eefc" style="background: #e6eefc" title="White"></button>
-            <button class="sw" data-c="#5b8cff" style="background: #5b8cff" title="Blue"></button>
-            <button class="sw" data-c="#ff5bd0" style="background: #ff5bd0" title="Magenta"></button>
+            <button
+              class="sw"
+              data-c="#4dff5a"
+              style="background: #4dff5a"
+              title="Green"
+            ></button>
+            <button
+              class="sw"
+              data-c="#ffb000"
+              style="background: #ffb000"
+              title="Amber"
+            ></button>
+            <button
+              class="sw"
+              data-c="#33e1ff"
+              style="background: #33e1ff"
+              title="Cyan"
+            ></button>
+            <button
+              class="sw"
+              data-c="#e6eefc"
+              style="background: #e6eefc"
+              title="White"
+            ></button>
+            <button
+              class="sw"
+              data-c="#5b8cff"
+              style="background: #5b8cff"
+              title="Blue"
+            ></button>
+            <button
+              class="sw"
+              data-c="#ff5bd0"
+              style="background: #ff5bd0"
+              title="Magenta"
+            ></button>
           </span>
           <label>CRT FX (global) · intensity + speed</label>
           <div class="strow" style="margin-bottom: 4px">
-            <button class="tbtn" id="fx-mode" title="Apply FX to the whole screen or per tile">GLOB</button>
+            <button
+              class="tbtn"
+              id="fx-mode"
+              title="Apply FX to the whole screen or per tile"
+            >
+              GLOB
+            </button>
           </div>
           <div id="g-fx">
             <div class="fxrow">
-              <button class="tbtn" data-k="g" title="Grille + scanlines">GRL</button>
+              <button class="tbtn" data-k="g" title="Grille + scanlines">
+                GRL
+              </button>
               <div class="fxsl">
-                <input type="range" data-k="g" min="0" max="100" step="5" title="Intensity" /><b data-k="g">OFF</b>
-                <input type="range" data-k="gs" min="0" max="300" step="10" title="Raster speed" /><b data-k="gs"
-                  >×1.0</b
-                >
+                <input
+                  type="range"
+                  data-k="g"
+                  min="0"
+                  max="100"
+                  step="5"
+                  title="Intensity"
+                /><b data-k="g">OFF</b>
+                <input
+                  type="range"
+                  data-k="gs"
+                  min="0"
+                  max="300"
+                  step="10"
+                  title="Raster speed"
+                /><b data-k="gs">×1.0</b>
               </div>
             </div>
             <div class="fxrow">
               <button class="tbtn" data-k="n" title="Static noise">NSE</button>
               <div class="fxsl">
-                <input type="range" data-k="n" min="0" max="100" step="5" title="Intensity" /><b data-k="n">OFF</b>
-                <input type="range" data-k="ns" min="0" max="300" step="10" title="Noise speed" /><b data-k="ns"
-                  >×1.0</b
-                >
+                <input
+                  type="range"
+                  data-k="n"
+                  min="0"
+                  max="100"
+                  step="5"
+                  title="Intensity"
+                /><b data-k="n">OFF</b>
+                <input
+                  type="range"
+                  data-k="ns"
+                  min="0"
+                  max="300"
+                  step="10"
+                  title="Noise speed"
+                /><b data-k="ns">×1.0</b>
               </div>
             </div>
             <div class="fxrow">
               <button class="tbtn" data-k="f" title="Flicker">FLK</button>
               <div class="fxsl">
-                <input type="range" data-k="f" min="0" max="100" step="5" title="Intensity" /><b data-k="f">OFF</b>
-                <input type="range" data-k="fs" min="0" max="300" step="10" title="Flicker speed" /><b data-k="fs"
-                  >×1.0</b
-                >
+                <input
+                  type="range"
+                  data-k="f"
+                  min="0"
+                  max="100"
+                  step="5"
+                  title="Intensity"
+                /><b data-k="f">OFF</b>
+                <input
+                  type="range"
+                  data-k="fs"
+                  min="0"
+                  max="300"
+                  step="10"
+                  title="Flicker speed"
+                /><b data-k="fs">×1.0</b>
               </div>
             </div>
             <div class="fxrow">
-              <button class="tbtn" data-k="t" title="Phosphor trails">TRL</button>
+              <button class="tbtn" data-k="t" title="Phosphor trails">
+                TRL
+              </button>
               <div class="fxsl">
-                <input type="range" data-k="t" min="0" max="100" step="5" title="Trail length" /><b data-k="t">OFF</b>
-                <input type="range" data-k="ts" min="10" max="300" step="10" title="Decay speed" /><b data-k="ts"
-                  >×1.0</b
-                >
+                <input
+                  type="range"
+                  data-k="t"
+                  min="0"
+                  max="100"
+                  step="5"
+                  title="Trail length"
+                /><b data-k="t">OFF</b>
+                <input
+                  type="range"
+                  data-k="ts"
+                  min="10"
+                  max="300"
+                  step="10"
+                  title="Decay speed"
+                /><b data-k="ts">×1.0</b>
               </div>
             </div>
             <div class="fxrow">
-              <button class="tbtn" data-k="c" title="Curved glass + vignette">CRV</button>
+              <button class="tbtn" data-k="c" title="Curved glass + vignette">
+                CRV
+              </button>
               <div class="fxsl">
-                <input type="range" data-k="c" min="0" max="100" step="5" title="Intensity" /><b data-k="c">OFF</b>
-                <input type="range" data-k="cs" min="0" max="300" step="10" title="Glass breathing speed" /><b
+                <input
+                  type="range"
+                  data-k="c"
+                  min="0"
+                  max="100"
+                  step="5"
+                  title="Intensity"
+                /><b data-k="c">OFF</b>
+                <input
+                  type="range"
                   data-k="cs"
-                  >×1.0</b
-                >
+                  min="0"
+                  max="300"
+                  step="10"
+                  title="Glass breathing speed"
+                /><b data-k="cs">×1.0</b>
               </div>
             </div>
             <div class="fxrow">
-              <button class="tbtn" data-k="w" title="Accent colour wash behind the glass">WSH</button>
+              <button
+                class="tbtn"
+                data-k="w"
+                title="Accent colour wash behind the glass"
+              >
+                WSH
+              </button>
               <div class="fxsl">
-                <input type="range" data-k="w" min="0" max="100" step="5" title="Intensity" /><b data-k="w">OFF</b>
-                <span style="font-size: 9px; color: var(--accdim, #8fa)">accent overlay</span><b></b>
+                <input
+                  type="range"
+                  data-k="w"
+                  min="0"
+                  max="100"
+                  step="5"
+                  title="Intensity"
+                /><b data-k="w">OFF</b>
+                <span style="font-size: 9px; color: var(--accdim, #8fa)"
+                  >accent overlay</span
+                ><b></b>
               </div>
             </div>
           </div>
@@ -1196,25 +1517,53 @@
               style="width: 56px; text-transform: none"
               title="Icon"
             />
-            <input type="text" id="set-title" class="tin" style="flex: 1" title="Board name" />
+            <input
+              type="text"
+              id="set-title"
+              class="tin"
+              style="flex: 1"
+              title="Board name"
+            />
           </div>
           <label>Netdata host (http://ip:19999)</label>
-          <input type="text" id="set-host" class="tin" style="text-transform: none" />
+          <input
+            type="text"
+            id="set-host"
+            class="tin"
+            style="text-transform: none"
+          />
           <label>Update interval (ms)</label>
-          <input type="number" id="set-refresh" class="tin" min="250" step="250" style="width: 120px" />
+          <input
+            type="number"
+            id="set-refresh"
+            class="tin"
+            min="250"
+            step="250"
+            style="width: 120px"
+          />
           <div class="row" style="justify-content: flex-start">
             <button class="pri" id="set-hostapply">Apply & reload</button>
           </div>
-          <div class="hint">Also settable with ?host=http://ip:19999 in the URL. Stored in this browser.</div>
+          <div class="hint">
+            Also settable with ?host=http://ip:19999 in the URL. Stored in this
+            browser.
+          </div>
         </div>
         <div id="tab-save" style="display: none">
           <label>Backup (layout, grid, custom styles, host)</label>
           <div class="row" style="justify-content: flex-start">
             <button id="set-export">Export file</button>
             <button id="set-import">Import file</button>
-            <input type="file" id="set-file" accept="application/json" style="display: none" />
+            <input
+              type="file"
+              id="set-file"
+              accept="application/json"
+              style="display: none"
+            />
           </div>
-          <div class="hint">Import overwrites the current dashboard and reloads.</div>
+          <div class="hint">
+            Import overwrites the current dashboard and reloads.
+          </div>
         </div>
       </div>
     </div>
@@ -1223,10 +1572,14 @@
       <div class="panel" style="width: 360px">
         <h3>DELETE STYLE?</h3>
         <label style="font-size: 11px; line-height: 1.6"
-          >This removes the style permanently. Tiles using it fall back to the Equalizer style.</label
+          >This removes the style permanently. Tiles using it fall back to the
+          Equalizer style.</label
         >
         <div class="row">
-          <button id="cm-no">Cancel</button><button class="del" id="cm-yes" style="margin-right: 0">Delete</button>
+          <button id="cm-no">Cancel</button
+          ><button class="del" id="cm-yes" style="margin-right: 0">
+            Delete
+          </button>
         </div>
       </div>
     </div>
@@ -1241,33 +1594,66 @@
           <div>
             <canvas id="se-cv" class="secv"></canvas>
             <div class="hint">
-              drag empty = new bar · drag corner = reshape · drag inside = move<br />
+              drag empty = new bar · drag corner = reshape · drag inside =
+              move<br />
               double-click edge = add node · double-click node = remove node<br />
-              circle / donut: 4 corner handles resize only · shape buttons place at the selected colour node's band
+              circle / donut: 4 corner handles resize only · shape buttons place
+              at the selected colour node's band
             </div>
           </div>
           <div class="shapebar">
             <button class="tbtn shp" id="shp-sq" title="Square">■</button>
-            <button class="tbtn shp" id="shp-pie" title="Quarter circle">◔</button>
-            <button class="tbtn shp" id="shp-dnt" title="Quarter donut">◠</button>
-            <button class="tbtn shp" id="shp-fcir" title="Full circle">●</button>
+            <button class="tbtn shp" id="shp-pie" title="Quarter circle">
+              ◔
+            </button>
+            <button class="tbtn shp" id="shp-dnt" title="Quarter donut">
+              ◠
+            </button>
+            <button class="tbtn shp" id="shp-fcir" title="Full circle">
+              ●
+            </button>
             <button class="tbtn shp" id="shp-fdnt" title="Full donut">◎</button>
           </div>
           <div class="eright" style="flex: 0 0 250px">
-            <label>Name</label><input type="text" id="se-name" maxlength="14" class="tin" placeholder="MY STYLE" />
-            <label>Fill direction (whole style)</label>
-            <div class="seg" id="se-dir"><button data-v="h">→ Horiz</button><button data-v="v">↑ Vert</button></div>
+            <label>Name</label
+            ><input
+              type="text"
+              id="se-name"
+              maxlength="14"
+              class="tin"
+              placeholder="MY STYLE"
+            />
             <label>Mask bar width · <span id="se-mbv">OFF</span></label>
-            <input type="range" id="se-mbars" min="0" max="6" step="1" value="0" style="width: 100%" />
+            <input
+              type="range"
+              id="se-mbars"
+              min="0"
+              max="6"
+              step="1"
+              value="0"
+              style="width: 100%"
+            />
             <label>Mask segment height · <span id="se-msv">OFF</span></label>
-            <input type="range" id="se-msegs" min="0" max="6" step="1" value="0" style="width: 100%" />
+            <input
+              type="range"
+              id="se-msegs"
+              min="0"
+              max="6"
+              step="1"
+              value="0"
+              style="width: 100%"
+            />
             <label>Snap to grid</label>
-            <div class="seg"><button id="se-snap" class="on">Snap 1/24</button></div>
+            <div class="seg">
+              <button id="se-snap" class="on">Snap 1/24</button>
+            </div>
             <div id="se-shopts" style="visibility: hidden">
               <label>Shape band · colour node №</label>
               <div class="seg" id="se-band">
-                <button data-v="-1" title="Auto (position colour, global fill)">A</button><button data-v="0">1</button
-                ><button data-v="1">2</button><button data-v="2">3</button><button data-v="3">4</button
+                <button data-v="-1" title="Auto (position colour, global fill)">
+                  A</button
+                ><button data-v="0">1</button><button data-v="1">2</button
+                ><button data-v="2">3</button><button data-v="3">4</button
                 ><button data-v="4">5</button>
               </div>
               <label>Shape fill · click again = next mode</label>
@@ -1297,7 +1683,10 @@
                 </select>
               </div>
               <label>Rotate shape</label>
-              <div class="seg" id="se-srot"><button data-v="ccw">↺ 90°</button><button data-v="cw">↻ 90°</button></div>
+              <div class="seg" id="se-srot">
+                <button data-v="ccw">↺ 90°</button
+                ><button data-v="cw">↻ 90°</button>
+              </div>
             </div>
             <label>Live preview</label>
             <div id="se-pvbox"><canvas id="se-pv" class="sepv"></canvas></div>
@@ -1306,7 +1695,9 @@
               <button id="se-clear">Clear</button>
             </div>
             <div class="row">
-              <button class="del" id="se-delstyle" style="display: none">Delete style</button>
+              <button class="del" id="se-delstyle" style="display: none">
+                Delete style
+              </button>
               <button id="se-cancel">Cancel</button>
               <button class="pri" id="se-save">Save</button>
             </div>
@@ -1320,10 +1711,11 @@
       // Point at your Netdata instance with  ?host=http://192.168.1.1:19999  (remembered afterwards),
       // or edit the default below. Optional:  ?refresh=2000  (ms between updates).
       const _qs = new URLSearchParams(location.search);
-      const _host = (_qs.get("host") || localStorage.getItem("rc_host") || "http://10.13.37.1:19999").replace(
-        /\/+$/,
-        "",
-      );
+      const _host = (
+        _qs.get("host") ||
+        localStorage.getItem("rc_host") ||
+        "http://10.13.37.1:19999"
+      ).replace(/\/+$/, "");
       if (_qs.get("host")) {
         try {
           localStorage.setItem("rc_host", _host);
@@ -1332,10 +1724,16 @@
       const NETDATA = _host;
       if (_qs.get("refresh")) {
         try {
-          localStorage.setItem("rc_refresh", String(Math.max(250, +_qs.get("refresh") || 1000)));
+          localStorage.setItem(
+            "rc_refresh",
+            String(Math.max(250, +_qs.get("refresh") || 1000)),
+          );
         } catch (e) {}
       }
-      const REFRESH_MS = Math.max(250, +_qs.get("refresh") || +localStorage.getItem("rc_refresh") || 1000);
+      const REFRESH_MS = Math.max(
+        250,
+        +_qs.get("refresh") || +localStorage.getItem("rc_refresh") || 1000,
+      );
       const HISTORY = 60;
       const MINCELL = 54,
         GAP = 9; // min cell px, grid gap (matches CSS)
@@ -1344,8 +1742,17 @@
       const $ = (id) => document.getElementById(id);
       const dpr = window.devicePixelRatio || 1;
       const dimVal = (c, n) => c?.dimensions?.[n]?.value;
-      const sumDims = (c) => (c ? Object.values(c.dimensions).reduce((a, x) => a + (x.value || 0), 0) : 0);
-      const sumAbs = (c) => (c ? Object.values(c.dimensions).reduce((a, x) => a + Math.abs(x.value || 0), 0) : 0);
+      const sumDims = (c) =>
+        c
+          ? Object.values(c.dimensions).reduce((a, x) => a + (x.value || 0), 0)
+          : 0;
+      const sumAbs = (c) =>
+        c
+          ? Object.values(c.dimensions).reduce(
+              (a, x) => a + Math.abs(x.value || 0),
+              0,
+            )
+          : 0;
       let LASTM = {};
       const CORES = [];
       let UID = 0;
@@ -1376,7 +1783,20 @@
         accent: "#4dff5a",
         icon: "◆",
         title: "System Monitor",
-        fx: { g: 55, n: 55, f: 0, t: 55, c: 55, gs: 100, ns: 100, fs: 100, ts: 100, cs: 100, w: 0, mode: "g" },
+        fx: {
+          g: 55,
+          n: 55,
+          f: 0,
+          t: 55,
+          c: 55,
+          gs: 100,
+          ns: 100,
+          fs: 100,
+          ts: 100,
+          cs: 100,
+          w: 0,
+          mode: "g",
+        },
       }; // CRT FX: grille, noise, flicker, trails, curve, level %
 
       function netRate(m, dir) {
@@ -1390,7 +1810,9 @@
             found = false;
           for (const k in m) {
             if (/^net\.(?!lo\b)/.test(k)) {
-              const d = dimVal(m[k], dir) ?? dimVal(m[k], dir === "received" ? "in" : "out");
+              const d =
+                dimVal(m[k], dir) ??
+                dimVal(m[k], dir === "received" ? "in" : "out");
               if (d != null) {
                 found = true;
                 sum += Math.abs(d);
@@ -1484,7 +1906,9 @@
           unit: "n",
           type: "eq",
           max: null,
-          calc: (m) => dimVal(m["ipv4.sockstat_tcp_sockets"], "inuse") ?? sumDims(m["ipv4.sockstat_tcp_sockets"]),
+          calc: (m) =>
+            dimVal(m["ipv4.sockstat_tcp_sockets"], "inuse") ??
+            sumDims(m["ipv4.sockstat_tcp_sockets"]),
         },
         {
           key: "sock",
@@ -1520,7 +1944,11 @@
           unit: "ps",
           type: "eq",
           max: null,
-          calc: (m) => Math.abs(dimVal(m["system.intr"], "interrupts") ?? sumDims(m["system.intr"])),
+          calc: (m) =>
+            Math.abs(
+              dimVal(m["system.intr"], "interrupts") ??
+                sumDims(m["system.intr"]),
+            ),
         },
         {
           key: "ctx",
@@ -1547,7 +1975,9 @@
           unit: "n",
           type: "eq",
           max: null,
-          calc: (m) => dimVal(m["system.processes"], "running") ?? sumDims(m["system.processes"]),
+          calc: (m) =>
+            dimVal(m["system.processes"], "running") ??
+            sumDims(m["system.processes"]),
         },
         {
           key: "entropy",
@@ -1574,12 +2004,15 @@
       }
       function occ(ex) {
         const R = Math.max(gridState.rows, maxBottom()) + 3;
-        const g = Array.from({ length: R }, () => Array(gridState.cols).fill(false));
+        const g = Array.from({ length: R }, () =>
+          Array(gridState.cols).fill(false),
+        );
         for (const s of SPECS) {
           if (!cards[s.key] || s.key === ex || !s.col) continue;
           for (let r = s.row - 1; r < s.row - 1 + (s.h || 1); r++)
             for (let c = s.col - 1; c < s.col - 1 + (s.w || 1); c++)
-              if (r >= 0 && r < R && c >= 0 && c < gridState.cols) g[r][c] = true;
+              if (r >= 0 && r < R && c >= 0 && c < gridState.cols)
+                g[r][c] = true;
         }
         return g;
       }
@@ -1612,11 +2045,15 @@
         grid.style.gridTemplateRows = `repeat(${gridState.rows}, ${gridState.cell}px)`;
         // if the content overflows the box, centre/end alignment would spill past the TOP/LEFT clip
         // edge and slice tile borders off - fall back to start so overflow always clips at the bottom
-        const contentW = gridState.cols * gridState.cell + (gridState.cols - 1) * GAP;
-        const contentH = gridState.rows * gridState.cell + (gridState.rows - 1) * GAP;
+        const contentW =
+          gridState.cols * gridState.cell + (gridState.cols - 1) * GAP;
+        const contentH =
+          gridState.rows * gridState.cell + (gridState.rows - 1) * GAP;
         const ah = availH();
-        grid.style.justifyContent = contentW > availW() ? "start" : gridState.alignH || "start";
-        grid.style.alignContent = contentH > ah ? "start" : gridState.alignV || "start";
+        grid.style.justifyContent =
+          contentW > availW() ? "start" : gridState.alignH || "start";
+        grid.style.alignContent =
+          contentH > ah ? "start" : gridState.alignV || "start";
         grid.style.height = ah + "px";
       }
       function availW() {
@@ -1641,8 +2078,14 @@
           }
         }
         // never clamp below the placed tiles' extent - the scale shrinks instead (no overlap, no crushing)
-        gridState.cols = Math.max(cCols, Math.min(colsMax, gridState.colsWant || gridState.cols));
-        gridState.rows = Math.max(cRows, Math.min(rowsMax, gridState.rowsWant || gridState.rows));
+        gridState.cols = Math.max(
+          cCols,
+          Math.min(colsMax, gridState.colsWant || gridState.cols),
+        );
+        gridState.rows = Math.max(
+          cRows,
+          Math.min(rowsMax, gridState.rowsWant || gridState.rows),
+        );
         const cellMax = Math.max(
           MINCELL,
           Math.floor(
@@ -1652,7 +2095,10 @@
             ),
           ),
         );
-        gridState.cell = Math.min(Math.max(MINCELL, gridState.cellWant || gridState.cell), cellMax);
+        gridState.cell = Math.min(
+          Math.max(MINCELL, gridState.cellWant || gridState.cell),
+          cellMax,
+        );
         $("sc-cols").min = cCols;
         $("sc-cols").max = Math.max(colsMax, cCols);
         $("sc-cols").value = gridState.cols;
@@ -1668,8 +2114,10 @@
           if (!cards[s.key]) continue;
           s.w = Math.min(s.w || 1, gridState.cols);
           s.h = Math.min(s.h || 1, gridState.rows);
-          if (s.col + s.w - 1 > gridState.cols) s.col = Math.max(1, gridState.cols - s.w + 1);
-          if (s.row + s.h - 1 > gridState.rows) s.row = Math.max(1, gridState.rows - s.h + 1);
+          if (s.col + s.w - 1 > gridState.cols)
+            s.col = Math.max(1, gridState.cols - s.w + 1);
+          if (s.row + s.h - 1 > gridState.rows)
+            s.row = Math.max(1, gridState.rows - s.h + 1);
           const el = $("c-" + s.key)?.closest(".card");
           if (el) styleTile(el, s);
         }
@@ -1677,12 +2125,23 @@
       function packTiles(vertical) {
         const list = SPECS.filter((s) => cards[s.key])
           .slice()
-          .sort((a, b) => (vertical ? a.col - b.col || a.row - b.row : a.row - b.row || a.col - b.col));
+          .sort((a, b) =>
+            vertical
+              ? a.col - b.col || a.row - b.row
+              : a.row - b.row || a.col - b.col,
+          );
         const placed = [];
         const free = (c, r, w, h) => {
-          if (c + w - 1 > gridState.cols || r + h - 1 > gridState.rows) return false;
+          if (c + w - 1 > gridState.cols || r + h - 1 > gridState.rows)
+            return false;
           for (const p of placed) {
-            if (!(c + w - 1 < p.c || c > p.c + p.w - 1 || r + h - 1 < p.r || r > p.r + p.h - 1)) return false;
+            if (!(
+              c + w - 1 < p.c ||
+              c > p.c + p.w - 1 ||
+              r + h - 1 < p.r ||
+              r > p.r + p.h - 1
+            ))
+              return false;
           }
           return true;
         };
@@ -1747,7 +2206,8 @@
         el.style.setProperty("--accent", acc);
         el.draggable = editMode;
         styleTile(el, s);
-        const sub = s.type === "cpu" && CORES.length ? ` · ${CORES.length} CORES` : "";
+        const sub =
+          s.type === "cpu" && CORES.length ? ` · ${CORES.length} CORES` : "";
         const head = `<div class="lbl"${s.titleon === false ? ' style="visibility:hidden"' : ""}><span>${s.label}${sub}</span><span class="u">${unitLabel(s.unit)}</span></div>`;
         const disp = `<div class="disp" style="text-align:${s.numalign || (s.numpos === "bottom" ? "center" : "right")}${s.numon === false ? ";visibility:hidden" : ""}"><span class="ghost" id="g-${s.key}"></span><span class="val" id="v-${s.key}">-</span></div>`;
         const canv = `<canvas id="c-${s.key}"></canvas>`;
@@ -1774,7 +2234,8 @@
         const old = $("c-" + s.key)?.closest(".card");
         if (old) old.remove();
         delete cards[s.key];
-        if (s.col + (s.w || 1) - 1 > gridState.cols) s.col = Math.max(1, gridState.cols - (s.w || 1) + 1);
+        if (s.col + (s.w || 1) - 1 > gridState.cols)
+          s.col = Math.max(1, gridState.cols - (s.w || 1) + 1);
         addTile(s);
       }
       function moveTile(key, col, row) {
@@ -1819,7 +2280,16 @@
           saved.forEach((t) => {
             if (t.user) {
               if (!(t.id in m)) return;
-              const s = makeUserSpec(t.id, t.type, t.w, t.h, t.numpos, t.key, t.dim, t.mode);
+              const s = makeUserSpec(
+                t.id,
+                t.type,
+                t.w,
+                t.h,
+                t.numpos,
+                t.key,
+                t.dim,
+                t.mode,
+              );
               s.unit = t.unit;
               s.label = t.label;
               applyOpts(s, t);
@@ -1846,14 +2316,25 @@
       }
 
       function unitLabel(u) {
-        return { "%": "%", mbit: "Mb/s", kbs: "KB/s", ps: "/s", n: "", c: "°C", "": "" }[u] ?? u;
+        return (
+          {
+            "%": "%",
+            mbit: "Mb/s",
+            kbs: "KB/s",
+            ps: "/s",
+            n: "",
+            c: "°C",
+            "": "",
+          }[u] ?? u
+        );
       }
       function segStr(v, u) {
         if (v == null || isNaN(v)) return "-";
         let s;
         if (u === "%" || u === "c") s = String(Math.round(v));
         else if (u === "") s = v.toFixed(2);
-        else if (u === "mbit") s = v >= 100 ? String(Math.round(v)) : v.toFixed(1);
+        else if (u === "mbit")
+          s = v >= 100 ? String(Math.round(v)) : v.toFixed(1);
         else s = String(Math.round(v));
         if (s.replace(".", "").length > 5) s = String(Math.round(v));
         return s;
@@ -1882,7 +2363,8 @@
       }
       function accentOf(s, v) {
         const c = stopsOf(s);
-        if (s.dyn === "pct" || s.dyn === "temp") return band(Math.min(1, v / 100), c);
+        if (s.dyn === "pct" || s.dyn === "temp")
+          return band(Math.min(1, v / 100), c);
         return c[0].c;
       }
       function setup(cv) {
@@ -1947,14 +2429,19 @@
               const j = COLS - 1 - idx;
               return j < vals.length ? vals[j] : null;
             } // fill right → left, cells stay put
-            return idx >= off && idx - off < vals.length ? vals[idx - off] : null;
+            return idx >= off && idx - off < vals.length
+              ? vals[idx - off]
+              : null;
           }
           if (!vert) {
             const cw = (sw - gc * (COLS - 1)) / COLS,
               segH = (sh - gs * (SEG - 1)) / SEG;
             for (let idx = 0; idx < COLS; idx++) {
               const v = valAt(idx),
-                lit = v == null ? 0 : Math.max(0, Math.min(SEG, Math.round((v / mx) * SEG)));
+                lit =
+                  v == null
+                    ? 0
+                    : Math.max(0, Math.min(SEG, Math.round((v / mx) * SEG)));
               for (let r = 0; r < SEG; r++) {
                 const on = r < lit,
                   col = band(r / (SEG - 1), c);
@@ -1974,20 +2461,29 @@
               segW = (sw - gs * (SEG - 1)) / SEG;
             for (let idx = 0; idx < COLS; idx++) {
               const v = valAt(idx),
-                lit = v == null ? 0 : Math.max(0, Math.min(SEG, Math.round((v / mx) * SEG)));
+                lit =
+                  v == null
+                    ? 0
+                    : Math.max(0, Math.min(SEG, Math.round((v / mx) * SEG)));
               for (let r = 0; r < SEG; r++) {
                 const on = r < lit,
                   col = band(r / (SEG - 1), c);
                 ctx.fillStyle = on ? col : OFF;
                 ctx.shadowColor = col;
                 ctx.shadowBlur = on ? 4 * dpr : 0;
-                ctx.fillRect(x0 + r * (segW + gs), y0 + idx * (rh + gc), segW, sq ? Math.min(rh, segW) : rh);
+                ctx.fillRect(
+                  x0 + r * (segW + gs),
+                  y0 + idx * (rh + gc),
+                  segW,
+                  sq ? Math.min(rh, segW) : rh,
+                );
               }
             }
           }
         }
         drawStrip(0, live, COLS - live.length, false); // live window scrolls as before
-        for (let e = 0; e < E; e++) drawStrip(e + 1, (casc[e] && casc[e].cols) || [], 0, true); // history fills right → left
+        for (let e = 0; e < E; e++)
+          drawStrip(e + 1, (casc[e] && casc[e].cols) || [], 0, true); // history fills right → left
         ctx.shadowBlur = 0;
       }
       function drawSeg(ctx, w, h, s, val) {
@@ -2029,7 +2525,10 @@
           items = keys.map((k, i) => ({
             lab: (k.length > 7 ? k.slice(0, 7) : k).toUpperCase(),
             frac: s.mode === "pct" ? vals[i] / total : vals[i] / mxv,
-            txt: s.mode === "pct" ? Math.round((vals[i] / total) * 100) + "%" : segStr(vals[i], ""),
+            txt:
+              s.mode === "pct"
+                ? Math.round((vals[i] / total) * 100) + "%"
+                : segStr(vals[i], ""),
           }));
         } else {
           const list = CORES.length ? CORES : ["system.cpu"];
@@ -2081,12 +2580,14 @@
           gs = 3 * dpr,
           sh = (h - gs * (ROWS - 1)) / ROWS,
           align = s.align || "center";
-        const lit = val > 0 ? Math.min(ROWS, Math.ceil((val / mxOf(s)) * ROWS)) : 0;
+        const lit =
+          val > 0 ? Math.min(ROWS, Math.ceil((val / mxOf(s)) * ROWS)) : 0;
         for (let i = 0; i < ROWS; i++) {
           const frac = i / (ROWS - 1),
             on = i < lit;
           const bw = w * (0.3 + 0.7 * frac);
-          const x = align === "left" ? 0 : align === "right" ? w - bw : (w - bw) / 2,
+          const x =
+              align === "left" ? 0 : align === "right" ? w - bw : (w - bw) / 2,
             y = h - (i + 1) * sh - i * gs,
             col = band(frac, c);
           ctx.fillStyle = on ? col : OFF;
@@ -2148,7 +2649,8 @@
         const mx = s.max != null ? s.max : Math.max(...slice, 1e-6) * 1.1,
           bw = (w - gap * (N - 1)) / N,
           off = N - slice.length;
-        const al = s.align === "top" ? "top" : s.align === "mid" ? "mid" : "bottom";
+        const al =
+          s.align === "top" ? "top" : s.align === "mid" ? "mid" : "bottom";
         slice.forEach((v, i) => {
           const frac = Math.min(1, v / mx),
             bh = Math.max(1, frac * h * 0.96),
@@ -2164,7 +2666,11 @@
       }
       function cascadeFeed(s, v, E, T, COLS) {
         if (!s._casc || s._casc.length !== E || s._cascCols !== COLS) {
-          s._casc = Array.from({ length: E }, () => ({ sum: 0, cnt: 0, cols: [] }));
+          s._casc = Array.from({ length: E }, () => ({
+            sum: 0,
+            cnt: 0,
+            cols: [],
+          }));
           s._cascCols = COLS;
         }
         let carry = v;
@@ -2189,7 +2695,13 @@
       function rotPt(p, rot) {
         const x = p[0],
           y = p[1];
-        return rot === 90 ? [1 - y, x] : rot === 180 ? [1 - x, 1 - y] : rot === 270 ? [y, 1 - x] : [x, y];
+        return rot === 90
+          ? [1 - y, x]
+          : rot === 180
+            ? [1 - x, 1 - y]
+            : rot === 270
+              ? [y, 1 - x]
+              : [x, y];
       }
       function drawCustomDef(ctx, w, h, def, s, val) {
         const st = stopsOf(s),
@@ -2242,7 +2754,9 @@
           let gi = 0,
             gmax = -1;
           for (let i = 0; i < angs.length; i++) {
-            const nxt = angs[(i + 1) % angs.length] + (i === angs.length - 1 ? 2 * Math.PI : 0);
+            const nxt =
+              angs[(i + 1) % angs.length] +
+              (i === angs.length - 1 ? 2 * Math.PI : 0);
             const g = nxt - angs[i];
             if (g > gmax) {
               gmax = g;
@@ -2271,7 +2785,10 @@
           }
           const ca = Math.cos(ang),
             sa = Math.sin(ang);
-          const pr = (X, Y) => [(X - ox) * ca + (Y - oy) * sa, -(X - ox) * sa + (Y - oy) * ca];
+          const pr = (X, Y) => [
+            (X - ox) * ca + (Y - oy) * sa,
+            -(X - ox) * sa + (Y - oy) * ca,
+          ];
           const cs = [pr(x0, y0), pr(x1, y0), pr(x1, y1), pr(x0, y1)];
           return {
             ox,
@@ -2309,7 +2826,12 @@
               rr = (cinf.r1 != null ? cinf.r1 : R) - rA;
             const rings = MS ? Math.max(1, Math.round(rr / (unit * MS))) : 1;
             const rMid = rA + rr / 2;
-            const sect = MB ? Math.max(1, Math.round((ext * Math.max(rMid, unit)) / (unit * MB))) : 1;
+            const sect = MB
+              ? Math.max(
+                  1,
+                  Math.round((ext * Math.max(rMid, unit)) / (unit * MB)),
+                )
+              : 1;
             const ga = sect > 1 ? (ext / sect) * 0.12 : 0;
             for (let b = 0; b < sect; b++) {
               const aa = a0 + (ext * b) / sect + ga / 2,
@@ -2341,9 +2863,23 @@
             ctx.rotate(-fr.ang);
             ctx.translate(-fr.ox, -fr.oy);
           } else if (base === "v") {
-            tileCells(ox, ox + dw, oy, oy + dh, MS ? ux * MS : dw + 1, MB ? uy * MB : dh + 1);
+            tileCells(
+              ox,
+              ox + dw,
+              oy,
+              oy + dh,
+              MS ? ux * MS : dw + 1,
+              MB ? uy * MB : dh + 1,
+            );
           } else {
-            tileCells(ox, ox + dw, oy, oy + dh, MB ? ux * MB : dw + 1, MS ? uy * MS : dh + 1);
+            tileCells(
+              ox,
+              ox + dw,
+              oy,
+              oy + dh,
+              MB ? ux * MB : dw + 1,
+              MS ? uy * MS : dh + 1,
+            );
           }
           ctx.clip();
         }
@@ -2372,10 +2908,22 @@
             const rA = cinf.r0 || 0,
               rB = cinf.r1 != null ? cinf.r1 : R;
             if (mode === "in") {
-              ctx.arc(cx, cy, Math.max(0.5, rA + (rB - rA) * L), 0, 2 * Math.PI);
+              ctx.arc(
+                cx,
+                cy,
+                Math.max(0.5, rA + (rB - rA) * L),
+                0,
+                2 * Math.PI,
+              );
             } else if (mode === "out") {
               ctx.rect(x0 - 2, y0 - 2, wb + 4, hb + 4);
-              ctx.arc(cx, cy, Math.max(0, rA + (rB - rA) * (1 - L)), 0, 2 * Math.PI);
+              ctx.arc(
+                cx,
+                cy,
+                Math.max(0, rA + (rB - rA) * (1 - L)),
+                0,
+                2 * Math.PI,
+              );
               ctx.clip("evenodd");
               return;
             } else if (mode === "ccw") {
@@ -2416,11 +2964,22 @@
           let cinf = null;
           if (fdEff[0] === "c") {
             const piv = sh.cpiv || "c";
-            const cx = piv === "tl" || piv === "bl" ? x0 : piv === "tr" || piv === "br" ? x1 : (x0 + x1) / 2;
-            const cy = piv === "tl" || piv === "tr" ? y0 : piv === "bl" || piv === "br" ? y1 : (y0 + y1) / 2;
+            const cx =
+              piv === "tl" || piv === "bl"
+                ? x0
+                : piv === "tr" || piv === "br"
+                  ? x1
+                  : (x0 + x1) / 2;
+            const cy =
+              piv === "tl" || piv === "tr"
+                ? y0
+                : piv === "bl" || piv === "br"
+                  ? y1
+                  : (y0 + y1) / 2;
             // radial extent of THE SHAPE around the pivot, so radial fills align with it
             let rmax = 0;
-            for (let i = 0; i < xs.length; i++) rmax = Math.max(rmax, Math.hypot(xs[i] - cx, ys[i] - cy));
+            for (let i = 0; i < xs.length; i++)
+              rmax = Math.max(rmax, Math.hypot(xs[i] - cx, ys[i] - cy));
             let rmin = 0;
             const enclosed = inPoly(
               [cx, cy],
@@ -2435,15 +2994,30 @@
                   L2 = abx * abx + aby * aby || 1e-9;
                 let t = ((cx - xs[i]) * abx + (cy - ys[i]) * aby) / L2;
                 t = Math.max(0, Math.min(1, t));
-                rmin = Math.min(rmin, Math.hypot(cx - (xs[i] + t * abx), cy - (ys[i] + t * aby)));
+                rmin = Math.min(
+                  rmin,
+                  Math.hypot(cx - (xs[i] + t * abx), cy - (ys[i] + t * aby)),
+                );
               }
               if (!isFinite(rmin)) rmin = 0;
             }
             const mode = sh.cmode || (fdEff === "c2" ? "ccw" : "cw");
             cinf =
               fdEff === "c3" || enclosed // pivot inside the shape = always a full 360° sweep
-                ? { cx, cy, R: rmax + 1, r0: rmin, r1: rmax, a0: -Math.PI / 2, ext: 2 * Math.PI, mode }
-                : Object.assign({ cx, cy, R: rmax + 1, r0: rmin, r1: rmax, mode }, circRange(xs, ys, cx, cy));
+                ? {
+                    cx,
+                    cy,
+                    R: rmax + 1,
+                    r0: rmin,
+                    r1: rmax,
+                    a0: -Math.PI / 2,
+                    ext: 2 * Math.PI,
+                    mode,
+                  }
+                : Object.assign(
+                    { cx, cy, R: rmax + 1, r0: rmin, r1: rmax, mode },
+                    circRange(xs, ys, cx, cy),
+                  );
           }
           ctx.save();
           path(sh.pts);
@@ -2513,7 +3087,8 @@
         const cv = $("c-" + s.key);
         if (!cv) return;
         const [cx, cw, ch2] = setup(cv);
-        let ddata = s.type === "line" && s.anim === "smooth" ? interpData(data, 0) : data; // smooth lines run 1s behind
+        let ddata =
+          s.type === "line" && s.anim === "smooth" ? interpData(data, 0) : data; // smooth lines run 1s behind
         let dval = val;
         const sv = scaleView(s, data),
           om = s.max;
@@ -2529,6 +3104,10 @@
         s.max = om;
         const card = v.closest(".card");
         card.style.setProperty("--accent", acc);
+        const lbl = card.querySelector(".lbl");
+        if (lbl)
+          lbl.style.color =
+            s.titlecol === "acc" ? gridState.accent : s.titlecol || "";
         applyWash(card, s);
       }
       function applyWash(card, s, force) {
@@ -2538,7 +3117,8 @@
         const wv = force || gridState.fx.mode === "i" ? +s.wash || 0 : 0;
         wel.style.display = wv > 0 ? "block" : "none";
         if (wv > 0) {
-          wel.style.background = s.washc && s.washc !== "acc" ? s.washc : gridState.accent;
+          wel.style.background =
+            s.washc && s.washc !== "acc" ? s.washc : gridState.accent;
           wel.style.opacity = ((wv / 100) * 0.9).toFixed(3);
         }
       }
@@ -2549,7 +3129,10 @@
           const c = m[id];
           if (!c) return null;
           const dims = c.dimensions;
-          const total = Object.values(dims).reduce((a, x) => a + Math.abs(x.value || 0), 0);
+          const total = Object.values(dims).reduce(
+            (a, x) => a + Math.abs(x.value || 0),
+            0,
+          );
           if (dim === "*" || !dims[dim]) return mode === "pct" ? 100 : total;
           const v = Math.abs(dims[dim].value || 0);
           return mode === "pct" ? (total ? (v / total) * 100 : 0) : v;
@@ -2558,7 +3141,8 @@
       function makeUserSpec(id, type, w, h, numpos, key, dim, mode) {
         dim = dim || "*";
         mode = mode || "abs";
-        const unit = mode === "pct" ? "%" : (LASTM[id] && LASTM[id].units) || "";
+        const unit =
+          mode === "pct" ? "%" : (LASTM[id] && LASTM[id].units) || "";
         return {
           key: key || "u" + UID++,
           id,
@@ -2599,6 +3183,7 @@
                 numpos: s.numpos,
                 numalign: s.numalign,
                 numcol: s.numcol,
+                titlecol: s.titlecol,
                 numon: s.numon,
                 titleon: s.titleon,
                 titlepos: s.titlepos,
@@ -2637,6 +3222,7 @@
           "numpos",
           "numalign",
           "numcol",
+          "titlecol",
           "numon",
           "titleon",
           "titlepos",
@@ -2685,7 +3271,20 @@
             gridState.icon = g.icon != null ? g.icon : "◆";
             gridState.title = g.title || "System Monitor";
             gridState.fx = Object.assign(
-              { g: 55, n: 55, f: 0, t: 55, c: 55, gs: 100, ns: 100, fs: 100, ts: 100, cs: 100, w: 0, mode: "g" },
+              {
+                g: 55,
+                n: 55,
+                f: 0,
+                t: 55,
+                c: 55,
+                gs: 100,
+                ns: 100,
+                fs: 100,
+                ts: 100,
+                cs: 100,
+                w: 0,
+                mode: "g",
+              },
               g.fx || {},
             );
             // migrate legacy 0/1 flags + LVL to per-effect intensities
@@ -2731,7 +3330,15 @@
         selStop = 0,
         multiKeys = null,
         multiBase = null;
-      const PALETTE = ["#4dff5a", "#ffb000", "#33e1ff", "#e6eefc", "#5b8cff", "#ff5bd0", "#ff2f24"];
+      const PALETTE = [
+        "#4dff5a",
+        "#ffb000",
+        "#33e1ff",
+        "#e6eefc",
+        "#5b8cff",
+        "#ff5bd0",
+        "#ff2f24",
+      ];
       const BUILTIN = [
         ["eq", "Equalizer"],
         ["seg", "H-Wedge"],
@@ -2740,9 +3347,14 @@
         ["line", "Line"],
         ["bar", "Bars"],
       ];
-      const SAMPLE = Array.from({ length: 26 }, (_, i) => 50 + 45 * Math.sin(i / 2.5));
+      const SAMPLE = Array.from(
+        { length: 26 },
+        (_, i) => 50 + 45 * Math.sin(i / 2.5),
+      );
       function setSeg(id, val) {
-        [...$(id).children].forEach((b) => b.classList.toggle("on", b.dataset.v === String(val)));
+        [...$(id).children].forEach((b) =>
+          b.classList.toggle("on", b.dataset.v === String(val)),
+        );
       }
       function defBars(style) {
         return style === "eq"
@@ -2773,14 +3385,19 @@
         multiKeys = null;
         multiBase = null;
         document.querySelector(".panel.editor").classList.remove("multi");
-        grid.querySelectorAll(".card.msel").forEach((c) => c.classList.remove("msel"));
+        grid
+          .querySelectorAll(".card.msel")
+          .forEach((c) => c.classList.remove("msel"));
       }
 
       // --- source (chart / dimension / mode) ---
       function fillCharts(sel) {
         $("m-chart").innerHTML = Object.keys(LASTM)
           .sort()
-          .map((k) => `<option value="${k}">${k}${LASTM[k].units ? " (" + LASTM[k].units + ")" : ""}</option>`)
+          .map(
+            (k) =>
+              `<option value="${k}">${k}${LASTM[k].units ? " (" + LASTM[k].units + ")" : ""}</option>`,
+          )
           .join("");
         if (sel && LASTM[sel]) $("m-chart").value = sel;
       }
@@ -2790,14 +3407,18 @@
         $("m-dim").innerHTML =
           `<option value="*">Sum of all dimensions</option>` +
           dims.map((d) => `<option value="${d}">${d}</option>`).join("");
-        $("m-dim").value = sel && (sel === "*" || dims.includes(sel)) ? sel : "*";
+        $("m-dim").value =
+          sel && (sel === "*" || dims.includes(sel)) ? sel : "*";
       }
       function srcChanged(resetDim) {
         if (!mConf || !mConf.user) return;
         mConf.id = $("m-chart").value || mConf.id;
         if (resetDim) fillDims(mConf.id, "*");
         mConf.dim = $("m-dim").value || "*";
-        mConf.unit = mConf.mode === "pct" ? "%" : (LASTM[mConf.id] && LASTM[mConf.id].units) || "";
+        mConf.unit =
+          mConf.mode === "pct"
+            ? "%"
+            : (LASTM[mConf.id] && LASTM[mConf.id].units) || "";
         mConf.max = mConf.mode === "pct" ? 100 : null;
         mConf.dyn = mConf.mode === "pct" ? "pct" : null;
         mConf.label = mConf.id;
@@ -2830,7 +3451,9 @@
             const g = k.split(".")[0];
             (groups[g] = groups[g] || []).push(k);
           });
-        const used = new Set(SPECS.filter((s) => cards[s.key]).map((s) => s.id));
+        const used = new Set(
+          SPECS.filter((s) => cards[s.key]).map((s) => s.id),
+        );
         nav.innerHTML = Object.keys(groups)
           .sort()
           .map((g) => {
@@ -2953,7 +3576,9 @@
         if (!b) return;
         mConf.style = b.dataset.v;
         mConf.bars = defBars(mConf.style);
-        [...$("m-styles").querySelectorAll(".stylebtn[data-v]")].forEach((x) => x.classList.toggle("on", x === b));
+        [...$("m-styles").querySelectorAll(".stylebtn[data-v]")].forEach((x) =>
+          x.classList.toggle("on", x === b),
+        );
         buildStyleOpts();
         refreshPreview();
       };
@@ -2964,7 +3589,10 @@
         if (selStop >= st.length) selStop = st.length - 1;
         if (selStop < 0) selStop = 0;
         const g = st
-          .map((s2, i) => `${s2.c} ${s2.p * 100}%, ${s2.c} ${st[i + 1] ? st[i + 1].p * 100 : 100}%`)
+          .map(
+            (s2, i) =>
+              `${s2.c} ${s2.p * 100}%, ${s2.c} ${st[i + 1] ? st[i + 1].p * 100 : 100}%`,
+          )
           .join(",");
         $("stopgrad").style.background = `linear-gradient(90deg,${g})`;
         const bar = $("stopbar");
@@ -2978,7 +3606,9 @@
           bar.appendChild(n);
         });
         $("stoppct").textContent = Math.round(st[selStop].p * 100) + "%";
-        [...$("stoppal").children].forEach((b) => b.classList.toggle("on", b.dataset.c === st[selStop].c));
+        [...$("stoppal").children].forEach((b) =>
+          b.classList.toggle("on", b.dataset.c === st[selStop].c),
+        );
       }
       function stopsChanged(light) {
         if (pSpec) pSpec.stops = mConf.stops;
@@ -3002,7 +3632,10 @@
           return;
         }
         if (mConf.stops.length >= 5) return; // click on bar: add a node here
-        const p = Math.max(0.02, Math.min(0.98, (e.clientX - rect.left) / rect.width));
+        const p = Math.max(
+          0.02,
+          Math.min(0.98, (e.clientX - rect.left) / rect.width),
+        );
         const st = mConf.stops;
         let i = st.findIndex((x) => x.p > p);
         if (i < 0) i = st.length;
@@ -3018,7 +3651,10 @@
           rect = $("stopbar").getBoundingClientRect();
         const lo = st[stopDrag - 1].p + 0.02,
           hi = st[stopDrag + 1] ? st[stopDrag + 1].p - 0.02 : 0.98;
-        st[stopDrag].p = Math.max(lo, Math.min(hi, (e.clientX - rect.left) / rect.width));
+        st[stopDrag].p = Math.max(
+          lo,
+          Math.min(hi, (e.clientX - rect.left) / rect.width),
+        );
         stopsChanged(true);
       });
       const stopUp = () => {
@@ -3062,7 +3698,8 @@
         stopsChanged(false);
       };
       $("stoppal").innerHTML = PALETTE.map(
-        (c) => `<button type="button" class="sw" data-c="${c}" style="background:${c}"></button>`,
+        (c) =>
+          `<button type="button" class="sw" data-c="${c}" style="background:${c}"></button>`,
       ).join("");
       $("stoppal").onclick = (e) => {
         const b = e.target.closest(".sw");
@@ -3102,13 +3739,15 @@
           }
         }
         $("styleopts").innerHTML = html;
-        if ($("m-cvals")) setSeg("m-cvals", mConf.cvals === false ? "off" : "on");
+        if ($("m-cvals"))
+          setSeg("m-cvals", mConf.cvals === false ? "off" : "on");
         if ($("m-align")) {
           let a = mConf.align || "center";
           if (mConf.style === "cpu")
             html += `<div class="orow"><label>Column values</label><div class="seg" id="m-cvals"><button data-v="on">Show</button><button data-v="off">Hide</button></div></div>`;
           if (mConf.style === "seg") a = a === "top" ? "top" : "bottom"; // legacy "center" → bottom (unchanged look)
-          if (mConf.style === "bar") a = a === "top" || a === "mid" ? a : "bottom";
+          if (mConf.style === "bar")
+            a = a === "top" || a === "mid" ? a : "bottom";
           setSeg("m-align", a);
         }
         if ($("m-fill")) setSeg("m-fill", mConf.fill === false ? "off" : "on");
@@ -3175,12 +3814,46 @@
         refreshPreview();
       };
       $("numpal").innerHTML = PALETTE.map(
-        (c) => `<button type="button" class="sw" data-c="${c}" style="background:${c}"></button>`,
+        (c) =>
+          `<button type="button" class="sw" data-c="${c}" style="background:${c}"></button>`,
       ).join("");
+      $("titlepal").innerHTML = PALETTE.map(
+        (c) =>
+          `<button type="button" class="sw" data-c="${c}" style="background:${c}"></button>`,
+      ).join("");
+      function titleColUI() {
+        if (!mConf) return;
+        $("m-tauto").classList.toggle("on", !mConf.titlecol);
+        $("m-tacc").classList.toggle("on", mConf.titlecol === "acc");
+        [...$("titlepal").children].forEach((b) =>
+          b.classList.toggle("on", b.dataset.c === mConf.titlecol),
+        );
+      }
+      $("m-tauto").onclick = () => {
+        if (!mConf) return;
+        mConf.titlecol = null;
+        titleColUI();
+        refreshPreview();
+      };
+      $("m-tacc").onclick = () => {
+        if (!mConf) return;
+        mConf.titlecol = "acc";
+        titleColUI();
+        refreshPreview();
+      };
+      $("titlepal").onclick = (e) => {
+        const b = e.target.closest(".sw");
+        if (!b || !mConf) return;
+        mConf.titlecol = b.dataset.c;
+        titleColUI();
+        refreshPreview();
+      };
       function numColUI() {
         $("m-nauto").classList.toggle("on", !mConf.numcol);
         $("m-nacc").classList.toggle("on", mConf.numcol === "acc");
-        [...$("numpal").children].forEach((b) => b.classList.toggle("on", b.dataset.c === mConf.numcol));
+        [...$("numpal").children].forEach((b) =>
+          b.classList.toggle("on", b.dataset.c === mConf.numcol),
+        );
       }
       $("m-nauto").onclick = () => {
         if (!mConf) return;
@@ -3220,7 +3893,8 @@
         if (!b || !mConf) return;
         mConf.border = b.dataset.v;
         setSeg("m-border", b.dataset.v);
-        $("bezelrow").style.visibility = mConf.border === "mon" ? "visible" : "hidden";
+        $("bezelrow").style.visibility =
+          mConf.border === "mon" ? "visible" : "hidden";
         refreshPreview();
       };
       function mFxUI() {
@@ -3230,12 +3904,15 @@
           .forEach((row) => {
             const k = row.querySelector("button").dataset.k,
               v = (mConf.fx && +mConf.fx[k]) || 0;
-            const sv = mConf.fx && mConf.fx[k + "s"] != null ? +mConf.fx[k + "s"] : 100;
+            const sv =
+              mConf.fx && mConf.fx[k + "s"] != null ? +mConf.fx[k + "s"] : 100;
             row.querySelector("button").classList.toggle("on", v > 0);
             row.querySelector(`input[data-k="${k}"]`).value = v;
-            row.querySelector(`b[data-k="${k}"]`).textContent = v > 0 ? v + "%" : "OFF";
+            row.querySelector(`b[data-k="${k}"]`).textContent =
+              v > 0 ? v + "%" : "OFF";
             row.querySelector(`input[data-k="${k}s"]`).value = sv;
-            row.querySelector(`b[data-k="${k}s"]`).textContent = "×" + (sv / 100).toFixed(1);
+            row.querySelector(`b[data-k="${k}s"]`).textContent =
+              "×" + (sv / 100).toFixed(1);
           });
       }
       $("m-fx").onclick = (e) => {
@@ -3259,7 +3936,8 @@
       });
       // --- per-tile colour wash ---
       $("mw-pal").innerHTML = PALETTE.map(
-        (c) => `<button type="button" class="sw" data-c="${c}" style="background:${c}"></button>`,
+        (c) =>
+          `<button type="button" class="sw" data-c="${c}" style="background:${c}"></button>`,
       ).join("");
       function mWashUI() {
         if (!mConf) return;
@@ -3268,7 +3946,9 @@
         $("mw-int").value = v;
         $("mw-val").textContent = v > 0 ? v + "%" : "OFF";
         $("mw-acc").classList.toggle("on", (mConf.washc || "acc") === "acc");
-        [...$("mw-pal").children].forEach((b) => b.classList.toggle("on", b.dataset.c === mConf.washc));
+        [...$("mw-pal").children].forEach((b) =>
+          b.classList.toggle("on", b.dataset.c === mConf.washc),
+        );
       }
       $("mw-btn").onclick = () => {
         if (!mConf) return;
@@ -3327,6 +4007,7 @@
           dyn: mConf.dyn,
           unit: mConf.unit,
           numcol: mConf.numcol,
+          titlecol: mConf.titlecol,
           fx: mConf.fx,
           user: mConf.user,
           id: mConf.id,
@@ -3337,7 +4018,10 @@
         return s;
       }
       function rebuildPvCard() {
-        const sub = mConf.style === "cpu" && CORES.length ? ` · ${CORES.length} CORES` : "";
+        const sub =
+          mConf.style === "cpu" && CORES.length
+            ? ` · ${CORES.length} CORES`
+            : "";
         const head = `<div class="lbl"${mConf.title3 === "off" ? ' style="visibility:hidden"' : ""}><span>${mConf.label || "PREVIEW"}${sub}</span><span class="u">${unitLabel(mConf.unit || "")}</span></div>`;
         const disp = `<div class="disp" style="text-align:${mConf.numalign || (mConf.numpos === "bottom" ? "center" : "right")}${mConf.numon === false ? ";visibility:hidden" : ""}"><span class="ghost" id="pv-g"></span><span class="val" id="pv-v">-</span></div>`;
         const canv = `<canvas id="pv-c"></canvas>`;
@@ -3346,12 +4030,18 @@
           ? `<div id="pv-edit" title="Edit this custom style in the style creator">✎</div>`
           : "";
         $("pvcard").innerHTML =
-          `<div class="wash"></div>` + pvedit + (mConf.title3 === "bottom" ? mid + head : head + mid);
-        if (CUSTOM[mConf.style]) $("pv-edit").onclick = () => seOpen(mConf.style);
+          `<div class="wash"></div>` +
+          pvedit +
+          (mConf.title3 === "bottom" ? mid + head : head + mid);
+        if (CUSTOM[mConf.style])
+          $("pv-edit").onclick = () => seOpen(mConf.style);
         applyWash($("pvcard"), mConf, true);
         $("pvcard").classList.toggle("classic", mConf.border === "classic");
         $("pvcard").classList.toggle("monitor", mConf.border === "mon");
-        $("pvcard").classList.toggle("beige", mConf.border === "mon" && mConf.bordercol === "beige");
+        $("pvcard").classList.toggle(
+          "beige",
+          mConf.border === "mon" && mConf.bordercol === "beige",
+        );
       }
       function sizePreview() {
         const pane = $("pvpane"),
@@ -3381,7 +4071,8 @@
           val = data[data.length - 1];
         const acc = accentOf(pSpec, val),
           str = segStr(val, pSpec.unit || ""),
-          ncol = pSpec.numcol === "acc" ? gridState.accent : pSpec.numcol || acc;
+          ncol =
+            pSpec.numcol === "acc" ? gridState.accent : pSpec.numcol || acc;
         const v = $("pv-v");
         if (!v) return;
         v.textContent = str;
@@ -3389,10 +4080,17 @@
         v.style.textShadow = `0 0 6px ${ncol},0 0 14px ${ncol}`;
         $("pv-g").textContent = ghostOf(str);
         $("pvcard").style.setProperty("--accent", acc);
+        const plbl = $("pvcard").querySelector(".lbl");
+        if (plbl)
+          plbl.style.color =
+            pSpec.titlecol === "acc" ? gridState.accent : pSpec.titlecol || "";
         const cv = $("pv-c");
         if (!cv || !cv.clientWidth) return;
         const [cx, cw, ch2] = setup(cv);
-        let ddata = pSpec.type === "line" && pSpec.anim === "smooth" ? interpData(data, 0) : data;
+        let ddata =
+          pSpec.type === "line" && pSpec.anim === "smooth"
+            ? interpData(data, 0)
+            : data;
         let dval = val;
         const sv = scaleView(pSpec, data),
           om = pSpec.max;
@@ -3401,7 +4099,8 @@
           dval = val - sv.base;
           if (sv.top != null) pSpec.max = sv.top;
         }
-        pSpec._mx = pSpec.max != null ? pSpec.max : Math.max(...ddata, 1e-6) * 1.1;
+        pSpec._mx =
+          pSpec.max != null ? pSpec.max : Math.max(...ddata, 1e-6) * 1.1;
         drawAny(cx, cw, ch2, pSpec, ddata, dval);
         pSpec.max = om;
       }
@@ -3414,7 +4113,13 @@
         PH.push(v == null || isNaN(v) ? 0 : v);
         if (PH.length > HISTORY) PH.shift();
         if (pSpec && pSpec.type === "eq" && (pSpec.extra | 0) > 0)
-          cascadeFeed(pSpec, PH[PH.length - 1], Math.min(2, pSpec.extra | 0), eqCols(pSpec), eqCols(pSpec));
+          cascadeFeed(
+            pSpec,
+            PH[PH.length - 1],
+            Math.min(2, pSpec.extra | 0),
+            eqCols(pSpec),
+            eqCols(pSpec),
+          );
         previewRender();
       }
 
@@ -3423,7 +4128,10 @@
         $("modal").style.display = "flex";
         selStop = 0;
         $("pvpane").style.height =
-          Math.min(3 * gridState.cell + 2 * GAP + 20, Math.round(window.innerHeight * 0.55)) + "px";
+          Math.min(
+            3 * gridState.cell + 2 * GAP + 20,
+            Math.round(window.innerHeight * 0.55),
+          ) + "px";
         renderStyleStrip();
         buildStyleOpts();
         stopsUI();
@@ -3437,11 +4145,13 @@
         buildChartNav();
         setSeg("m-nal", mConf.numalign || "right");
         numColUI();
+        titleColUI();
         setSeg("m-numon", mConf.numon ? "on" : "off");
         setSeg("m-titleon", mConf.title3);
         setSeg("m-border", mConf.border || "def");
         setSeg("m-bezel", mConf.bordercol || "dark");
-        $("bezelrow").style.visibility = mConf.border === "mon" ? "visible" : "hidden";
+        $("bezelrow").style.visibility =
+          mConf.border === "mon" ? "visible" : "hidden";
         mFxUI();
         mWashUI();
         refreshPreview();
@@ -3452,6 +4162,7 @@
           const h = Math.max(
             document.querySelector("#modal .eleft").offsetHeight,
             document.querySelector("#modal .eright").offsetHeight,
+            $("ecolours").offsetHeight,
           );
           nav.style.maxHeight = h + "px";
         }
@@ -3497,6 +4208,7 @@
           numpos: "top",
           numalign: "right",
           numcol: null,
+          titlecol: null,
           numon: true,
           title3: "top",
           border: "off",
@@ -3550,9 +4262,11 @@
           numpos: s.numpos || "top",
           numalign: s.numalign || (s.numpos === "bottom" ? "center" : "right"),
           numcol: s.numcol || null,
+          titlecol: s.titlecol || null,
           numon: s.numon !== false,
           title3: s.titleon === false ? "off" : s.titlepos || "top",
-          border: s.border === "classic" || s.border === "mon" ? s.border : "off", // legacy "def" → off
+          border:
+            s.border === "classic" || s.border === "mon" ? s.border : "off", // legacy "def" → off
           bordercol: s.bordercol || "dark",
           fx: fxPick(s.fx),
           wash: +s.wash || 0,
@@ -3607,16 +4321,20 @@
         s.anim = mConf.anim;
         s.cvals = mConf.cvals !== false;
         s.scale = mConf.scale || "auto";
-        s.smin = mConf.smin != null && mConf.smin !== "" ? +mConf.smin : undefined;
-        s.smax = mConf.smax != null && mConf.smax !== "" ? +mConf.smax : undefined;
+        s.smin =
+          mConf.smin != null && mConf.smin !== "" ? +mConf.smin : undefined;
+        s.smax =
+          mConf.smax != null && mConf.smax !== "" ? +mConf.smax : undefined;
         s.w = mConf.w;
         s.h = mConf.h;
         s.numpos = mConf.numpos;
         s.numalign = mConf.numalign;
         s.numcol = mConf.numcol || undefined;
+        s.titlecol = mConf.titlecol || undefined;
         s.numon = mConf.numon;
         s.titleon = mConf.title3 !== "off";
-        s.titlepos = mConf.title3 === "off" ? s.titlepos || "top" : mConf.title3;
+        s.titlepos =
+          mConf.title3 === "off" ? s.titlepos || "top" : mConf.title3;
         s.border = mConf.border;
         s.bordercol = mConf.bordercol || "dark";
         s.fx = { ...mConf.fx };
@@ -3627,7 +4345,8 @@
           s.dim = mConf.dim || "*";
           s.mode = mConf.mode || "abs";
           s.calc = userCalc(s.id, s.dim, s.mode);
-          s.unit = s.mode === "pct" ? "%" : (LASTM[s.id] && LASTM[s.id].units) || "";
+          s.unit =
+            s.mode === "pct" ? "%" : (LASTM[s.id] && LASTM[s.id].units) || "";
           s.max = s.mode === "pct" ? 100 : null;
           s.dyn = s.mode === "pct" ? "pct" : undefined;
           s.label = s.id;
@@ -3664,9 +4383,11 @@
           numpos: s.numpos || "top",
           numalign: s.numalign || "right",
           numcol: s.numcol || null,
+          titlecol: s.titlecol || null,
           numon: s.numon !== false,
           title3: s.titleon === false ? "off" : s.titlepos || "top",
-          border: s.border === "classic" || s.border === "mon" ? s.border : "off",
+          border:
+            s.border === "classic" || s.border === "mon" ? s.border : "off",
           bordercol: s.bordercol || "dark",
           fx: fxPick(s.fx),
           wash: +s.wash || 0,
@@ -3684,6 +4405,7 @@
         multiBase = {
           stops: JSON.stringify(mConf.stops),
           numcol: mConf.numcol || null,
+          titlecol: mConf.titlecol || null,
           numpos: mConf.numpos,
           numon: !!mConf.numon,
           title3: mConf.title3,
@@ -3704,12 +4426,21 @@
         const d = [];
         if (JSON.stringify(mConf.stops) !== multiBase.stops) d.push("stops");
         if ((mConf.numcol || null) !== multiBase.numcol) d.push("numcol");
+        if ((mConf.titlecol || null) !== multiBase.titlecol) d.push("titlecol");
         if (mConf.numpos !== multiBase.numpos) d.push("numpos");
         if (!!mConf.numon !== multiBase.numon) d.push("numon");
         if (mConf.title3 !== multiBase.title3) d.push("title");
-        if (mConf.border !== multiBase.border || mConf.bordercol !== multiBase.bordercol) d.push("border");
+        if (
+          mConf.border !== multiBase.border ||
+          mConf.bordercol !== multiBase.bordercol
+        )
+          d.push("border");
         if (JSON.stringify(mConf.fx) !== multiBase.fx) d.push("fx");
-        if ((+mConf.wash || 0) !== multiBase.wash || (mConf.washc || "acc") !== multiBase.washc) d.push("wash");
+        if (
+          (+mConf.wash || 0) !== multiBase.wash ||
+          (mConf.washc || "acc") !== multiBase.washc
+        )
+          d.push("wash");
         return d;
       }
       function updateMultiBtn() {
@@ -3727,11 +4458,13 @@
             s.cols = undefined;
           }
           if (d.has("numcol")) s.numcol = mConf.numcol || undefined;
+          if (d.has("titlecol")) s.titlecol = mConf.titlecol || undefined;
           if (d.has("numpos")) s.numpos = mConf.numpos;
           if (d.has("numon")) s.numon = mConf.numon;
           if (d.has("title")) {
             s.titleon = mConf.title3 !== "off";
-            s.titlepos = mConf.title3 === "off" ? s.titlepos || "top" : mConf.title3;
+            s.titlepos =
+              mConf.title3 === "off" ? s.titlepos || "top" : mConf.title3;
           }
           if (d.has("border")) {
             s.border = mConf.border;
@@ -3765,7 +4498,16 @@
           return;
         }
         if (!mConf.id) return;
-        const s = makeUserSpec(mConf.id, mConf.style, mConf.w, mConf.h, mConf.numpos, null, mConf.dim, mConf.mode);
+        const s = makeUserSpec(
+          mConf.id,
+          mConf.style,
+          mConf.w,
+          mConf.h,
+          mConf.numpos,
+          null,
+          mConf.dim,
+          mConf.mode,
+        );
         applyConf(s);
         if (pendingCell) {
           s.col = pendingCell.col;
@@ -3818,7 +4560,11 @@
             yi = pts[i][1],
             xj = pts[j][0],
             yj = pts[j][1];
-          if (yi > pt[1] !== yj > pt[1] && pt[0] < ((xj - xi) * (pt[1] - yi)) / (yj - yi) + xi) ins = !ins;
+          if (
+            yi > pt[1] !== yj > pt[1] &&
+            pt[0] < ((xj - xi) * (pt[1] - yi)) / (yj - yi) + xi
+          )
+            ins = !ins;
         }
         return ins;
       }
@@ -3851,7 +4597,8 @@
             j ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y);
           });
           ctx.closePath();
-          ctx.fillStyle = i === SE.sel ? "rgba(77,255,90,.32)" : "rgba(160,190,160,.16)";
+          ctx.fillStyle =
+            i === SE.sel ? "rgba(77,255,90,.32)" : "rgba(160,190,160,.16)";
           ctx.fill();
           ctx.strokeStyle = i === SE.sel ? C.green : "#5a7a5a";
           ctx.lineWidth = 1.5 * dpr;
@@ -3859,7 +4606,10 @@
           if (sh.band != null) {
             const cx2 = sh.pts.reduce((a, p) => a + p[0], 0) / sh.pts.length,
               cy2 = sh.pts.reduce((a, p) => a + p[1], 0) / sh.pts.length;
-            const bc = mConf && mConf.stops[sh.band] ? mConf.stops[sh.band].c : "#9fb0a0";
+            const bc =
+              mConf && mConf.stops[sh.band]
+                ? mConf.stops[sh.band].c
+                : "#9fb0a0";
             ctx.font = `bold ${Math.round(13 * dpr)}px "Courier New",monospace`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
@@ -3872,7 +4622,12 @@
           if (i === SE.sel) {
             ctx.fillStyle = "#fff";
             (sh.kind ? kindCorners(sh) : sh.pts).forEach((p) =>
-              ctx.fillRect(p[0] * w - 3.5 * dpr, p[1] * h - 3.5 * dpr, 7 * dpr, 7 * dpr),
+              ctx.fillRect(
+                p[0] * w - 3.5 * dpr,
+                p[1] * h - 3.5 * dpr,
+                7 * dpr,
+                7 * dpr,
+              ),
             );
           }
         });
@@ -3918,12 +4673,23 @@
         if (!cv || !cv.clientWidth) return;
         const [ctx, w, h] = setup(cv);
         ctx.clearRect(0, 0, w, h);
-        const s = { stops: (mConf && mConf.stops) || defStops(), max: 100, _mx: 100 };
+        const s = {
+          stops: (mConf && mConf.stops) || defStops(),
+          max: 100,
+          _mx: 100,
+        };
         drawCustomDef(
           ctx,
           w,
           h,
-          { shapes: SE.shapes, fillDir: SE.fillDir, rot: SE.rot, gw: SE.gw, gh: SE.gh, asp: SE.tw / SE.th },
+          {
+            shapes: SE.shapes,
+            fillDir: SE.fillDir,
+            rot: SE.rot,
+            gw: SE.gw,
+            gh: SE.gh,
+            asp: SE.tw / SE.th,
+          },
           s,
           50 + 48 * Math.sin(seT),
         );
@@ -3931,7 +4697,10 @@
       function seHitNode(pt) {
         const order =
           SE.sel >= 0
-            ? [SE.sel, ...SE.shapes.map((_, i) => i).filter((i) => i !== SE.sel)]
+            ? [
+                SE.sel,
+                ...SE.shapes.map((_, i) => i).filter((i) => i !== SE.sel),
+              ]
             : SE.shapes.map((_, i) => i);
         for (const i of order) {
           const sh = SE.shapes[i];
@@ -3950,7 +4719,9 @@
           hit = seHitNode(pt);
         if (hit) {
           SE.sel = hit.i;
-          SE.drag = SE.shapes[hit.i].kind ? { t: "size" } : { t: "node", j: hit.j };
+          SE.drag = SE.shapes[hit.i].kind
+            ? { t: "size" }
+            : { t: "node", j: hit.j };
           seDraw();
           return;
         }
@@ -3977,20 +4748,36 @@
         if (!SE.drag) return;
         const pt = seNorm(e);
         if (SE.drag.t === "node") {
-          SE.shapes[SE.sel].pts[SE.drag.j] = [seSnap(pt[0], 0), seSnap(pt[1], 1)];
+          SE.shapes[SE.sel].pts[SE.drag.j] = [
+            seSnap(pt[0], 0),
+            seSnap(pt[1], 1),
+          ];
         } else if (SE.drag.t === "size") {
           const sh = SE.shapes[SE.sel],
             o = sh.orient || 0,
             full = sh.kind === "fcir" || sh.kind === "fdnt";
-          let r = Math.max(Math.abs(pt[0] - sh.ax) / SE.sx, Math.abs(pt[1] - sh.ay) / SE.sy);
+          let r = Math.max(
+            Math.abs(pt[0] - sh.ax) / SE.sx,
+            Math.abs(pt[1] - sh.ay) / SE.sy,
+          );
           r = seSnap(r * SE.sx, 0) / SE.sx;
           if (full) {
             // full shapes resize from their centre, so the radius is capped by the nearest edge
-            r = Math.min(r, sh.ax / SE.sx, (1 - sh.ax) / SE.sx, sh.ay / SE.sy, (1 - sh.ay) / SE.sy);
+            r = Math.min(
+              r,
+              sh.ax / SE.sx,
+              (1 - sh.ax) / SE.sx,
+              sh.ay / SE.sy,
+              (1 - sh.ay) / SE.sy,
+            );
           } else {
             const dx = o === 0 || o === 1 ? 1 : -1,
               dy = o === 1 || o === 2 ? 1 : -1;
-            r = Math.min(r, (dx > 0 ? 1 - sh.ax : sh.ax) / SE.sx, (dy > 0 ? 1 - sh.ay : sh.ay) / SE.sy);
+            r = Math.min(
+              r,
+              (dx > 0 ? 1 - sh.ax : sh.ax) / SE.sx,
+              (dy > 0 ? 1 - sh.ay : sh.ay) / SE.sy,
+            );
           }
           r = Math.max(2 / SEGRID, r);
           sh.r = r;
@@ -4074,7 +4861,8 @@
           const px = a[0] + t * abx,
             py = a[1] + t * aby,
             d = Math.hypot(pt[0] - px, pt[1] - py);
-          if (d < 0.035 && (!best || d < best.d)) best = { j, d, p: [seSnap(px, 0), seSnap(py, 1)] };
+          if (d < 0.035 && (!best || d < best.d))
+            best = { j, d, p: [seSnap(px, 0), seSnap(py, 1)] };
         }
         if (best) {
           sh.pts.splice(best.j + 1, 0, best.p);
@@ -4082,13 +4870,6 @@
           sePrevDraw();
         }
       });
-      $("se-dir").onclick = (e) => {
-        const b = e.target.closest("button");
-        if (!b) return;
-        SE.fillDir = b.dataset.v;
-        setSeg("se-dir", SE.fillDir);
-        sePrevDraw();
-      };
       $("se-snap").onclick = () => {
         SE.snap = !SE.snap;
         $("se-snap").classList.toggle("on", SE.snap);
@@ -4121,7 +4902,10 @@
         const inner = [];
         for (let i = 8; i >= 0; i--) {
           const a = a0 + ((Math.PI / 2) * i) / 8;
-          inner.push([ax + (rx / 2) * Math.cos(a), ay + (ry / 2) * Math.sin(a)]);
+          inner.push([
+            ax + (rx / 2) * Math.cos(a),
+            ay + (ry / 2) * Math.sin(a),
+          ]);
         }
         return [...outer, ...inner];
       }
@@ -4179,14 +4963,30 @@
             ry = r * SE.sy;
           const ax = Math.max(rx, Math.min(1 - rx, 0.5 + offx)),
             ay = Math.max(ry, Math.min(1 - ry, 0.5 + offy));
-          SE.shapes.push({ pts: fullPts(kind, ax, ay, r), band: selStop, kind, ax, ay, r, orient: 0 });
+          SE.shapes.push({
+            pts: fullPts(kind, ax, ay, r),
+            band: selStop,
+            kind,
+            ax,
+            ay,
+            r,
+            orient: 0,
+          });
         } else if (kind === "pie" || kind === "dnt") {
           const r = 0.25,
             rx = r * SE.sx,
             ry = r * SE.sy;
           const ax = Math.min(1 - rx, 0.5 - rx / 2 + offx),
             ay = Math.max(ry, Math.min(1, 0.5 + ry / 2 + offy));
-          SE.shapes.push({ pts: quarterPts(kind, ax, ay, r, 0), band: selStop, kind, ax, ay, r, orient: 0 });
+          SE.shapes.push({
+            pts: quarterPts(kind, ax, ay, r, 0),
+            band: selStop,
+            kind,
+            ax,
+            ay,
+            r,
+            orient: 0,
+          });
         } else {
           const dx = 0.25 * SE.sx,
             dy = 0.25 * SE.sy;
@@ -4275,8 +5075,13 @@
           sh.pts = sh.pts.map(([x, y]) => {
             const u = (x - cx) * SE.tw,
               v = (y - cy) * SE.th;
-            const p = cw ? [cx - v / SE.tw, cy + u / SE.th] : [cx + v / SE.tw, cy - u / SE.th];
-            return [Math.max(0, Math.min(1, p[0])), Math.max(0, Math.min(1, p[1]))];
+            const p = cw
+              ? [cx - v / SE.tw, cy + u / SE.th]
+              : [cx + v / SE.tw, cy - u / SE.th];
+            return [
+              Math.max(0, Math.min(1, p[0])),
+              Math.max(0, Math.min(1, p[1])),
+            ];
           });
         }
         seDraw();
@@ -4334,7 +5139,6 @@
           SE.gh = 0;
           $("se-name").value = "";
         }
-        setSeg("se-dir", SE.fillDir);
         $("se-mbars").value = SE.gw;
         $("se-mbv").textContent = SE.gw ? SE.gw + " cells" : "OFF";
         $("se-msegs").value = SE.gh;
@@ -4355,7 +5159,14 @@
             th = 1 / a;
           }
         }
-        const BOX = Math.max(480, Math.min(840, window.innerWidth - 450, Math.round(window.innerHeight * 0.74)));
+        const BOX = Math.max(
+          480,
+          Math.min(
+            840,
+            window.innerWidth - 450,
+            Math.round(window.innerHeight * 0.74),
+          ),
+        );
         const U = BOX / Math.max(tw, th),
           cvW = Math.round(U * tw),
           cvH = Math.round(U * th);
@@ -4475,11 +5286,14 @@
         $("editbtn").classList.toggle("on", editMode);
         $("ctrls").classList.toggle("on", editMode);
         grid.querySelectorAll(".card").forEach((c) => (c.draggable = editMode));
-        grid.querySelectorAll(".demo").forEach((d) => d.classList.remove("demo"));
+        grid
+          .querySelectorAll(".demo")
+          .forEach((d) => d.classList.remove("demo"));
         refreshPlaceholders();
         if (editMode) {
           // hint: auto-show the hover affordances on the first tile (or highlight the first empty cell)
-          const first = grid.querySelector(".card") || grid.querySelector(".addcard");
+          const first =
+            grid.querySelector(".card") || grid.querySelector(".addcard");
           if (first) {
             first.classList.add("demo");
             if (first.classList.contains("card")) posOverlays(first);
@@ -4539,7 +5353,9 @@
         renderAll();
       };
       function renderAll() {
-        for (const sp of SPECS) if (cards[sp.key] && hist[sp.key] && hist[sp.key].length) render(sp, false);
+        for (const sp of SPECS)
+          if (cards[sp.key] && hist[sp.key] && hist[sp.key].length)
+            render(sp, false);
       }
       window.addEventListener("resize", () => {
         clampGrid();
@@ -4550,8 +5366,12 @@
       });
       function cycleAlign(axis) {
         const seq = ["start", "center", "end"];
-        if (axis === "h") gridState.alignH = seq[(seq.indexOf(gridState.alignH || "start") + 1) % 3];
-        else gridState.alignV = seq[(seq.indexOf(gridState.alignV || "start") + 1) % 3];
+        if (axis === "h")
+          gridState.alignH =
+            seq[(seq.indexOf(gridState.alignH || "start") + 1) % 3];
+        else
+          gridState.alignV =
+            seq[(seq.indexOf(gridState.alignV || "start") + 1) % 3];
         applyGrid();
         saveGrid();
       }
@@ -4589,7 +5409,9 @@
         };
       }
       function fillGrid() {
-        const used = new Set(SPECS.filter((s) => cards[s.key]).map((s) => s.id));
+        const used = new Set(
+          SPECS.filter((s) => cards[s.key]).map((s) => s.id),
+        );
         const cands = Object.keys(LASTM)
           .filter((k) => !used.has(k))
           .sort((a, b) => chartScore(b) - chartScore(a) || a.localeCompare(b));
@@ -4612,7 +5434,16 @@
             mode = "pct";
           }
           const st = styles[i % styles.length];
-          const s = makeUserSpec(k, st, w, h, i % 3 === 0 ? "bottom" : "top", null, dim, mode);
+          const s = makeUserSpec(
+            k,
+            st,
+            w,
+            h,
+            i % 3 === 0 ? "bottom" : "top",
+            null,
+            dim,
+            mode,
+          );
           s.bars = defBars(st);
           s.col = spot.col;
           s.row = spot.row;
@@ -4640,7 +5471,11 @@
           r = (n >> 16) & 255,
           g = (n >> 8) & 255,
           b = n & 255;
-        const m = (v) => Math.max(0, Math.min(255, Math.round(f < 0 ? v * (1 + f) : v + (255 - v) * f)));
+        const m = (v) =>
+          Math.max(
+            0,
+            Math.min(255, Math.round(f < 0 ? v * (1 + f) : v + (255 - v) * f)),
+          );
         return `rgb(${m(r)},${m(g)},${m(b)})`;
       }
       function applyAccent() {
@@ -4657,7 +5492,9 @@
         gridState.accent = hex;
         applyAccent();
         saveGrid();
-        [...$("swatches").children].forEach((x) => x.classList.toggle("on", x.dataset.c === hex));
+        [...$("swatches").children].forEach((x) =>
+          x.classList.toggle("on", x.dataset.c === hex),
+        );
       }
       $("swatches").onclick = (e) => {
         const b = e.target.closest(".sw");
@@ -4690,7 +5527,12 @@
         m.style.height = y2 - y1 + "px";
         grid.querySelectorAll(".card").forEach((c) => {
           const r = c.getBoundingClientRect();
-          const hit = !(r.right < x1 || r.left > x2 || r.bottom < y1 || r.top > y2);
+          const hit = !(
+            r.right < x1 ||
+            r.left > x2 ||
+            r.bottom < y1 ||
+            r.top > y2
+          );
           c.classList.toggle("msel", hit);
         });
       });
@@ -4700,9 +5542,14 @@
         $("marquee").style.display = "none";
         if (!marqHit) return;
         suppressClick = true;
-        const keys = [...grid.querySelectorAll(".card.msel")].map((c) => c.dataset.k);
+        const keys = [...grid.querySelectorAll(".card.msel")].map(
+          (c) => c.dataset.k,
+        );
         if (keys.length) openMulti(keys);
-        else grid.querySelectorAll(".card.msel").forEach((c) => c.classList.remove("msel"));
+        else
+          grid
+            .querySelectorAll(".card.msel")
+            .forEach((c) => c.classList.remove("msel"));
       });
 
       // ---------- click + drag/drop (fixed cells) ----------
@@ -4721,7 +5568,9 @@
       }
       grid.addEventListener("mouseover", (e) => {
         if (!editMode) return;
-        grid.querySelectorAll(".demo").forEach((d) => d.classList.remove("demo"));
+        grid
+          .querySelectorAll(".demo")
+          .forEach((d) => d.classList.remove("demo"));
         const card = e.target.closest(".card");
         if (card) posOverlays(card);
       });
@@ -4762,13 +5611,17 @@
         const c = $("c-" + dragKey)?.closest(".card");
         if (c) c.classList.remove("dragging");
         dragKey = null;
-        grid.querySelectorAll(".dragover").forEach((x) => x.classList.remove("dragover"));
+        grid
+          .querySelectorAll(".dragover")
+          .forEach((x) => x.classList.remove("dragover"));
       });
       grid.addEventListener("dragover", (e) => {
         if (!dragKey) return;
         e.preventDefault();
         const t = e.target.closest(".addcard");
-        grid.querySelectorAll(".dragover").forEach((x) => x.classList.remove("dragover"));
+        grid
+          .querySelectorAll(".dragover")
+          .forEach((x) => x.classList.remove("dragover"));
         if (t) t.classList.add("dragover");
       });
       grid.addEventListener("drop", (e) => {
@@ -4776,7 +5629,9 @@
         e.preventDefault();
         const t = e.target.closest(".addcard");
         if (t) moveTile(dragKey, +t.dataset.col, +t.dataset.row);
-        grid.querySelectorAll(".dragover").forEach((x) => x.classList.remove("dragover"));
+        grid
+          .querySelectorAll(".dragover")
+          .forEach((x) => x.classList.remove("dragover"));
       });
 
       // ---------- CRT FX overlay (WebGL) ----------
@@ -4872,7 +5727,11 @@
         GL.useProgram(FXP);
         const b = GL.createBuffer();
         GL.bindBuffer(GL.ARRAY_BUFFER, b);
-        GL.bufferData(GL.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), GL.STATIC_DRAW);
+        GL.bufferData(
+          GL.ARRAY_BUFFER,
+          new Float32Array([-1, -1, 3, -1, -1, 3]),
+          GL.STATIC_DRAW,
+        );
         const lp = GL.getAttribLocation(FXP, "p");
         GL.enableVertexAttribArray(lp);
         GL.vertexAttribPointer(lp, 2, GL.FLOAT, false, 0, 0);
@@ -4951,7 +5810,14 @@
               bottom: Math.max(...panels.map((r) => r.bottom)),
             }
           : null;
-        const hits = (r) => U && !(r.right < U.left || r.left > U.right || r.bottom < U.top || r.top > U.bottom);
+        const hits = (r) =>
+          U &&
+          !(
+            r.right < U.left ||
+            r.left > U.right ||
+            r.bottom < U.top ||
+            r.top > U.bottom
+          );
         if (f.mode !== "i") {
           if (setF(fxGlobal())) {
             if (!U) {
@@ -4968,7 +5834,15 @@
                 [0, U.top, U.left, U.bottom - U.top],
                 [U.right, U.top, iw - U.right, U.bottom - U.top],
               ].forEach((s2) =>
-                drawSc(glRect({ left: s2[0], top: s2[1], right: s2[0] + s2[2], bottom: s2[1] + s2[3] }), rc),
+                drawSc(
+                  glRect({
+                    left: s2[0],
+                    top: s2[1],
+                    right: s2[0] + s2[2],
+                    bottom: s2[1] + s2[3],
+                  }),
+                  rc,
+                ),
               );
               GL.disable(GL.SCISSOR_TEST);
             }
@@ -4976,9 +5850,21 @@
         } else {
           // individual mode: each tile is its own little CRT (scissored draws - same total pixels as one pass)
           // border width + margin so the glass edge falloff never swallows the border line
-          const bezelInset = (el) => (el.classList.contains("monitor") ? 10 : el.classList.contains("classic") ? 3 : 0);
+          const bezelInset = (el) =>
+            el.classList.contains("monitor")
+              ? 10
+              : el.classList.contains("classic")
+                ? 3
+                : 0;
           const inset = (r, bi) =>
-            bi ? { left: r.left + bi, top: r.top + bi, right: r.right - bi, bottom: r.bottom - bi } : r;
+            bi
+              ? {
+                  left: r.left + bi,
+                  top: r.top + bi,
+                  right: r.right - bi,
+                  bottom: r.bottom - bi,
+                }
+              : r;
           GL.enable(GL.SCISSOR_TEST);
           grid.querySelectorAll(".card").forEach((el) => {
             const s = cards[el.dataset.k];
@@ -5001,10 +5887,21 @@
         ) {
           const pv = $("pvcard");
           if (pv && setF(mConf.fx)) {
-            const bi = pv.classList.contains("monitor") ? 10 : pv.classList.contains("classic") ? 3 : 0;
+            const bi = pv.classList.contains("monitor")
+              ? 10
+              : pv.classList.contains("classic")
+                ? 3
+                : 0;
             const r = pv.getBoundingClientRect();
             const g = glRect(
-              bi ? { left: r.left + bi, top: r.top + bi, right: r.right - bi, bottom: r.bottom - bi } : r,
+              bi
+                ? {
+                    left: r.left + bi,
+                    top: r.top + bi,
+                    right: r.right - bi,
+                    bottom: r.bottom - bi,
+                  }
+                : r,
             );
             GL.enable(GL.SCISSOR_TEST);
             drawSc(g, g);
@@ -5021,12 +5918,14 @@
               v = +f[k] || 0;
             row.querySelector("button").classList.toggle("on", v > 0);
             row.querySelector(`input[data-k="${k}"]`).value = v;
-            row.querySelector(`b[data-k="${k}"]`).textContent = v > 0 ? v + "%" : "OFF";
+            row.querySelector(`b[data-k="${k}"]`).textContent =
+              v > 0 ? v + "%" : "OFF";
             const sp = row.querySelector(`input[data-k="${k}s"]`);
             if (sp) {
               const sv = f[k + "s"] == null ? 100 : +f[k + "s"];
               sp.value = sv;
-              row.querySelector(`b[data-k="${k}s"]`).textContent = "×" + (sv / 100).toFixed(1);
+              row.querySelector(`b[data-k="${k}s"]`).textContent =
+                "×" + (sv / 100).toFixed(1);
             }
           });
       }
@@ -5090,7 +5989,9 @@
         ts.style.display = "";
         const h = ts.offsetHeight;
         if (!vis) ts.style.display = "none";
-        ["tab-net", "tab-save"].forEach((id) => ($(id).style.minHeight = h + "px"));
+        ["tab-net", "tab-save"].forEach(
+          (id) => ($(id).style.minHeight = h + "px"),
+        );
       }
       function setClose() {
         $("setmodal").style.display = "none";
@@ -5100,14 +6001,22 @@
         const t = e.target;
         if (
           t &&
-          (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA" || t.tagName === "BUTTON")
+          (t.tagName === "INPUT" ||
+            t.tagName === "SELECT" ||
+            t.tagName === "TEXTAREA" ||
+            t.tagName === "BUTTON")
         )
           return;
         if ($("setmodal").style.display === "flex") {
           setClose();
           return;
         }
-        if (modalOpen() || $("smodal").style.display === "flex" || $("cmodal").style.display === "flex") return;
+        if (
+          modalOpen() ||
+          $("smodal").style.display === "flex" ||
+          $("cmodal").style.display === "flex"
+        )
+          return;
         setOpen();
       });
       $("set-x").onclick = setClose;
@@ -5156,7 +6065,11 @@
           styles: get("rc_styles"),
         };
         const a = document.createElement("a");
-        a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+        a.href = URL.createObjectURL(
+          new Blob([JSON.stringify(data, null, 2)], {
+            type: "application/json",
+          }),
+        );
         a.download = "netdata-retro-backup.json";
         a.click();
         URL.revokeObjectURL(a.href);
@@ -5173,11 +6086,17 @@
               alert("Not a Netdata Retro Console backup file.");
               return;
             }
-            if (d.layout) localStorage.setItem("rc_layout", JSON.stringify(d.layout));
+            if (d.layout)
+              localStorage.setItem("rc_layout", JSON.stringify(d.layout));
             if (d.grid) localStorage.setItem("rc_grid", JSON.stringify(d.grid));
-            if (d.styles) localStorage.setItem("rc_styles", JSON.stringify(d.styles));
+            if (d.styles)
+              localStorage.setItem("rc_styles", JSON.stringify(d.styles));
             if (d.host) localStorage.setItem("rc_host", d.host);
-            if (d.refresh) localStorage.setItem("rc_refresh", String(Math.max(250, +d.refresh || 1000)));
+            if (d.refresh)
+              localStorage.setItem(
+                "rc_refresh",
+                String(Math.max(250, +d.refresh || 1000)),
+              );
             location.reload();
           } catch (err) {
             alert("Could not read that backup file.");
@@ -5190,7 +6109,8 @@
       loadStyles();
       applyAccent();
       applyFx();
-      $("h1t").textContent = (gridState.icon ? gridState.icon + " " : "") + gridState.title;
+      $("h1t").textContent =
+        (gridState.icon ? gridState.icon + " " : "") + gridState.title;
       document.title = gridState.title.toUpperCase();
 
       // ---------- smooth line ticker (1s delay, head glides to each new point) ----------
@@ -5204,10 +6124,17 @@
         return out;
       }
       function pvSmooth() {
-        return modalOpen() && pSpec && pSpec.type === "line" && pSpec.anim === "smooth";
+        return (
+          modalOpen() &&
+          pSpec &&
+          pSpec.type === "line" &&
+          pSpec.anim === "smooth"
+        );
       }
       function smoothTiles() {
-        return SPECS.filter((s) => cards[s.key] && s.type === "line" && s.anim === "smooth");
+        return SPECS.filter(
+          (s) => cards[s.key] && s.type === "line" && s.anim === "smooth",
+        );
       }
       function lineFrame(now) {
         const list = smoothTiles();
@@ -5244,13 +6171,20 @@
         FRAMEFRAC = 1;
       }
       function ensureLineLoop() {
-        if (!lineRAF && (smoothTiles().length || pvSmooth())) lineRAF = requestAnimationFrame(lineFrame);
+        if (!lineRAF && (smoothTiles().length || pvSmooth()))
+          lineRAF = requestAnimationFrame(lineFrame);
       }
-      [...$("swatches").children].forEach((x) => x.classList.toggle("on", x.dataset.c === gridState.accent));
+      [...$("swatches").children].forEach((x) =>
+        x.classList.toggle("on", x.dataset.c === gridState.accent),
+      );
 
       async function tick() {
         try {
-          const m = await (await fetch(NETDATA + "/api/v1/allmetrics?format=json", { cache: "no-store" })).json();
+          const m = await (
+            await fetch(NETDATA + "/api/v1/allmetrics?format=json", {
+              cache: "no-store",
+            })
+          ).json();
           LASTM = m;
           lastTick = performance.now();
           if (!built) build(m);
@@ -5277,7 +6211,10 @@
               hh = Math.floor((val % 86400) / 3600),
               mm = Math.floor((val % 3600) / 60);
             $("uptime").textContent =
-              (d ? d + " " : "") + String(hh).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+              (d ? d + " " : "") +
+              String(hh).padStart(2, "0") +
+              ":" +
+              String(mm).padStart(2, "0");
           }
           $("clock").textContent = new Date().toLocaleTimeString("en-GB");
         } catch (e) {
