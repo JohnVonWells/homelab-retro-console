@@ -558,6 +558,10 @@
         cursor: pointer;
         border-radius: 4px;
       }
+      .panel button:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
       .panel button.pri {
         color: var(--green);
         border-color: var(--green);
@@ -2982,6 +2986,7 @@
           if (v != null && !isNaN(v)) PH.push(v);
         } catch (e) {}
         buildChartNav();
+        updateAddBtn();
         refreshPreview();
       }
       $("m-chart").onchange = () => srcChanged(true);
@@ -3005,23 +3010,28 @@
             (groups[g] = groups[g] || []).push(k);
           });
         const used = new Set(SPECS.filter((s) => cards[s.key]).map((s) => s.id));
-        nav.innerHTML = Object.keys(groups)
-          .sort()
-          .map((g) => {
-            const open = navOpen.has(g);
-            return (
-              `<div class="cn-g${open ? " open" : ""}" data-g="${g}"><span>${g}</span><span>${open ? "−" : "+"}${groups[g].length}</span></div>` +
-              (open
-                ? groups[g]
-                    .map(
-                      (k) =>
-                        `<div class="cn-i${used.has(k) ? " used" : ""}${mConf.id === k ? " sel" : ""}" data-k="${k}" title="${k}${used.has(k) ? " · already on dashboard" : ""}">${k.slice(g.length + 1) || k}</div>`,
-                    )
-                    .join("")
-                : "")
-            );
-          })
-          .join("");
+        const totalCharts = Object.keys(LASTM).length;
+        const totalUsed = [...used].filter((id) => id in LASTM).length;
+        nav.innerHTML =
+          `<div class="cn-g" style="cursor:default"><span>ACTIVE</span><span>${totalUsed}/${totalCharts}</span></div>` +
+          Object.keys(groups)
+            .sort()
+            .map((g) => {
+              const open = navOpen.has(g);
+              const un = groups[g].filter((k) => used.has(k)).length;
+              return (
+                `<div class="cn-g${open ? " open" : ""}" data-g="${g}"><span>${g}</span><span>${un ? `(${un}/${groups[g].length})` : groups[g].length} ${open ? "−" : "+"}</span></div>` +
+                (open
+                  ? groups[g]
+                      .map(
+                        (k) =>
+                          `<div class="cn-i${used.has(k) ? " used" : ""}${mConf.id === k ? " sel" : ""}" data-k="${k}" title="${k}${used.has(k) ? " · already on dashboard" : ""}">${k.slice(g.length + 1) || k}</div>`,
+                      )
+                      .join("")
+                  : "")
+              );
+            })
+            .join("");
         nav.scrollTop = navScroll;
       }
       $("chartnav").onscroll = (e) => {
@@ -3029,7 +3039,7 @@
       };
       $("chartnav").onclick = (e) => {
         const g = e.target.closest(".cn-g");
-        if (g) {
+        if (g && g.dataset.g) {
           const k = g.dataset.g;
           navOpen.has(k) ? navOpen.delete(k) : navOpen.add(k);
           buildChartNav();
@@ -3665,6 +3675,7 @@
         bColUI();
         mFxUI();
         mWashUI();
+        updateAddBtn();
         refreshPreview();
         // the data-point list runs the full height of the menu
         const nav = $("chartnav");
@@ -3951,8 +3962,14 @@
         return d;
       }
       function updateMultiBtn() {
-        if (!multiKeys) return;
-        $("m-add").textContent = "Apply (" + multiDiff().length + ")";
+        if (multiKeys) $("m-add").textContent = "Apply (" + multiDiff().length + ")";
+        updateAddBtn();
+      }
+      function updateAddBtn() {
+        const b = $("m-add");
+        if (multiKeys) b.disabled = multiDiff().length === 0;
+        else if (editKey) b.disabled = false;
+        else b.disabled = !mConf || !mConf.id; // add mode with no chart selected = nothing to add
       }
       function applyMulti() {
         const d = new Set(multiDiff());
