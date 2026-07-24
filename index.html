@@ -1365,8 +1365,10 @@
             <label>Mask segment height · <span id="se-msv">OFF</span></label>
             <input type="range" id="se-msegs" min="0" max="6" step="1" value="0" style="width: 100%" />
             <label>Snap to grid</label>
-            <div class="seg">
-              <button id="se-snap" class="on">Snap 1/24</button>
+            <div class="seg" id="se-snapseg">
+              <button data-v="1">1/24</button
+              ><button data-v="2" title="Half-cell snap - centres can land on grid lines">1/48</button
+              ><button data-v="0">Off</button>
             </div>
             <div id="se-shopts" style="visibility: hidden">
               <label>Shape band · colour node №</label>
@@ -4044,7 +4046,7 @@
         rot: 0,
         gw: 0,
         gh: 0,
-        snap: true,
+        snapDiv: 1,
         editing: null,
         drag: null,
         rubber: null,
@@ -4066,7 +4068,8 @@
       }
       function seSnap(v, ax) {
         const n = ax ? SE.ny : SE.nx;
-        return SE.snap ? Math.round(v * n) / n : v;
+        const d = SE.snapDiv == null ? 1 : SE.snapDiv;
+        return d ? Math.round(v * n * d) / (n * d) : v;
       }
       function inPoly(pt, pts) {
         let ins = false;
@@ -4357,9 +4360,11 @@
           sePrevDraw();
         }
       });
-      $("se-snap").onclick = () => {
-        SE.snap = !SE.snap;
-        $("se-snap").classList.toggle("on", SE.snap);
+      $("se-snapseg").onclick = (e) => {
+        const b = e.target.closest("button");
+        if (!b) return;
+        SE.snapDiv = +b.dataset.v;
+        setSeg("se-snapseg", b.dataset.v);
       };
       $("se-delshape").onclick = () => {
         if (SE.sel >= 0) {
@@ -4587,8 +4592,10 @@
         sePrevDraw();
       };
       function seSizeCanvas(tw, th) {
-        const BOX = Math.max(480, Math.min(840, window.innerWidth - 450, Math.round(window.innerHeight * 0.74)));
-        const U = BOX / Math.max(tw, th),
+        // per-axis limits: a 3x1 design may use the full window width, not a square-ish box
+        const maxW = Math.max(480, window.innerWidth - 460);
+        const maxH = Math.max(360, Math.round(window.innerHeight * 0.74));
+        const U = Math.min(maxW / tw, maxH / th),
           cvW = Math.round(U * tw),
           cvH = Math.round(U * th);
         $("se-cv").style.width = cvW + "px";
@@ -4650,7 +4657,8 @@
         $("se-mbv").textContent = SE.gw ? SE.gw + " cells" : "OFF";
         $("se-msegs").value = SE.gh;
         $("se-msv").textContent = SE.gh ? SE.gh + " cells" : "OFF";
-        $("se-snap").classList.toggle("on", SE.snap);
+        if (SE.snapDiv == null) SE.snapDiv = 1;
+        setSeg("se-snapseg", String(SE.snapDiv));
         $("se-delstyle").style.display = SE.editing ? "" : "none";
         // canvas + live preview mirror the design proportions; grid cells stay square.
         // editing an existing style reopens at ITS saved aspect, new styles use the tile's W×H
